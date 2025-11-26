@@ -41,7 +41,8 @@ Aplikacja (web + ewentualnie mobilna), która:
 ## Aktualne zadania
 
 1. Do czwartku zbudować projekt oraz ogarnąć środowisko
-2. Zaprojektowanie schematu bazy. Macie dowolność odnośnie tabeli, ale zróbcie to w miarę przemyślany sposób i dobrze byłoby, żeby ogarnąć to w jakiejś cywilizowanej postaci graficznej
+
+
 
 
 
