@@ -42,3 +42,39 @@ Aplikacja (web + ewentualnie mobilna), która:
 
 1. Do czwartku zbudować projekt oraz ogarnąć środowisko
 2. Zaprojektowanie schematu bazy. Macie dowolność odnośnie tabeli, ale zróbcie to w miarę przemyślany sposób i dobrze byłoby, żeby ogarnąć to w jakiejś cywilizowanej postaci graficznej
+
+
+
+git clone https://github.com/wikigr14/Smart-Soft-Solutions-Innowacja-AI.git
+cd Smart-Soft-Solutions-Innowacja-AI
+
+#### Krok C: Konfiguracja sekretów (`.env`)
+To kluczowy moment. Pliku `.env` nie ma na GitHubie (dla bezpieczeństwa). Twój kolega musi:
+1.  Utworzyć nowy plik o nazwie `.env` w głównym folderze.
+2.  Wkleić do niego treść, którą mu wyślesz (Twoje klucze API i konfigurację bazy):
+
+```env
+OPENAI_API_KEY=sk-....
+DATABASE_URL=postgresql://appuser:sekret@db:5432/transcriber_db
+POSTGRES_USER=appuser
+POSTGRES_PASSWORD=sekret
+POSTGRES_DB=transcriber_db
+... (reszta Twoich zmiennych)
+
+#### Krok D: Uruchomienie (Codzienna praca)
+
+Na Windowsie używa się `docker-compose` (zamiast `podman-compose`).
+
+**Terminal 1 (Backend + Baza):**
+```powershell
+docker-compose up --build
+*(To postawi bazę i backend na localhost:8000)*
+
+**Terminal 2 (Frontend):**
+```powershell
+cd frontend
+npm install  # Tylko za pierwszym razem
+npm run dev
+*(To uruchomi Reacta na localhost:5173)*
+
+I to wszystko! Projekt będzie działał na Windowsie identycznie jak u Ciebie na Fedorze.
