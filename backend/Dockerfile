@@ -10,4 +10,4 @@ FROM builder as final
 COPY . .
 
 # ZMIANA: Zamiast uruchamiać serwer, pokaż nam, jakie pliki są w katalogu /app
-CMD ["find", ".", "-maxdepth", "3", "-not", "-path", "*/.*"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
