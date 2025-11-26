@@ -1,0 +1,14 @@
+# Plik .gitignore
+# Node.js
+/frontend/node_modules
+/frontend/dist
+
+# Python/Virtual Env
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Docker/Poufne
+.env
+/postgres_data

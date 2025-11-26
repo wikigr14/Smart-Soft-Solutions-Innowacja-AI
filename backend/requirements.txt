@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+openai
+psycopg2-binary
+sqlalchemy
+asyncpg
+google-api-python-client
+pgvector
