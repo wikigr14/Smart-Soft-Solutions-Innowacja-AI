@@ -51,6 +51,7 @@ DATABASE_URL=postgresql://appuser:sekret@db:5432/transcriber_db
 POSTGRES_USER=appuser
 POSTGRES_PASSWORD=sekret
 POSTGRES_DB=transcriber_db
+```
 
 #### Uruchamianie
 
