@@ -14,7 +14,7 @@ class Transcript(Base):
     # Podsumowanie wygenerowane przez AI
     summary = Column(Text, nullable=True)
 
-    # Wektor do wyszukiwania semantycznego (1536 to wymiar dla OpenAI text-embedding-ada-002)
+    # Wektor do wyszukiwania (narazie zostawiam 1536 ale to do sprawdzenia z HuggingFace i odpowiednim modelem!!!)
     embedding = Column(Vector(1536), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. BAZA DANYCH (PostgreSQL z pgvector)
+  # 1. BAZA DANYCH
   db:
     image: ankane/pgvector:v0.5.1
     restart: always
@@ -27,6 +27,19 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app:Z
+
+  # 3. FRONTEND (React) - NOWOŚĆ!
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # To ważne! Zapobiega nadpisaniu linuxowych bibliotek tymi z Windowsa
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Pomaga na Windowsie z odświeżaniem zmian w kodzie
 
 volumes:
   postgres_data:

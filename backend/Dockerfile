@@ -1,13 +1,15 @@
-# --- FAZA 1: BUDOWANIE (Instalacja zależności) ---
-FROM python:3.11-slim as builder
+# Używamy lekkiej wersji Pythona
+FROM python:3.11
+
+# Ustawienie katalogu roboczego
 WORKDIR /app
-ENV PYTHONUNBUFFERED 1
+
+# Kopiowanie listy bibliotek i instalacja
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- FAZA 2: URUCHAMIANIE ---
-FROM builder as final
+# Kopiowanie kodu aplikacji
 COPY . .
 
-# ZMIANA: Zamiast uruchamiać serwer, pokaż nam, jakie pliki są w katalogu /app
+# Uruchomienie serwera (na porcie 8000 z opcją reload)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

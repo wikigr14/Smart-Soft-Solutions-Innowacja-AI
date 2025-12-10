@@ -1,81 +1,72 @@
-# AI – Interfejs z bazą RAG, do której użytkownicy wrzucają nagranie, a system robi podsumowanie i dodaje eventy do kalendarza
+# AI Transcriber – Inteligentny asystent spotkań (RAG + Kalendarz)
+
+Aplikacja webowa, która analizuje treść spotkań (transkrypcje), tworzy podsumowania, wyciąga listę zadań i automatycznie proponuje wydarzenia do kalendarza Google.
 
 ## Opis zadania
 
-Aplikacja (web + ewentualnie mobilna), która:
+Aplikacja web, która:
 
-1. Przyjmuje nagrania audio (np. z zebrania, rozmowy),
-2. Transkrybuje je do tekstu,
-3. Korzysta z modelu LLM + RAG do wygenerowania:
+1. Obecnie zakładamy, że posiadamy gotową transkrypcję ,
+2. Korzysta z modelu LLM + RAG do wygenerowania:
     *   podsumowania,
     *   listy zadań / decyzji,
     *   propozycji wydarzeń (spotkań) do kalendarza,
-4. Pozwala zatwierdzić i wysłać eventy do kalendarza (Google / Outlook).
+3. Pozwala zatwierdzić i wysłać eventy do kalendarza (Google / Outlook).
 
 ---
 
 ## Zakres funkcjonalny
 
-*   **Upload audio** (lub nagrywanie bezpośrednio z przeglądarki / aplikacji mobilnej).
-*   **Transkrypcja** (ASR – Automatic Speech Recognition).
+*   **Upload audio / Transkrypcja** (feature opcjonalny).
 *   **Analiza treści i RAG** (pobieranie kontekstu z wektorowej bazy wiedzy – np. wcześniejsze spotkania, dokumenty).
 *   **Generowanie podsumowania i listy eventów.**
-*   **Integracja z kalendarzem** (Google Calendar / Microsoft 365).
+*   **Integracja z kalendarzem** (Google Calendar).
 *   **Panel historii nagrań + podsumowań.**
 
 ---
 
-## Taki zestaw
+## Stack Technologiczny
 
 | Komponent | Technologia |
 | :--- | :--- |
-| **Backend** | Python + FastAPI |
-| **Transkrypcja** | Whisper (OpenAI API) |
-| **Podsumowania / AI** | OpenAI API (LLM) |
-| **Baza danych** | PostgreSQL + pgvector |
-| **Frontend** | React |
-| **Integracja** | Google Calendar API |
+| **Infrastruktura** | Docker & Docker Compose |
+| **Backend** | Python 3.11 + FastAPI |
+| **Baza danych** | PostgreSQL + pgvector (Wektoryzacja danych) |
+| **Frontend** | React + Vite + Material UI |
+| **AI (LLM)** | OpenRouter.ai |
+| **Embeddingi** | HuggingFace |
+| **Integracje** | Google Calendar API |
 
 ---
 
-## Aktualne zadania
+## Instalacja i uruchomienie
 
-1. Do czwartku zbudować projekt oraz ogarnąć środowisko
+Projekt jest w pełni skonteneryzowany. Wymaga jedynie zainstalowanego **Dockera**.
 
-
-
-
-
+### 1. Pobranie repozytorium
+```
 git clone https://github.com/wikigr14/Smart-Soft-Solutions-Innowacja-AI.git
 cd Smart-Soft-Solutions-Innowacja-AI
+```
 
-#### Krok C: Konfiguracja sekretów (`.env`)
-To kluczowy moment. Pliku `.env` nie ma na GitHubie (dla bezpieczeństwa). Twój kolega musi:
-1.  Utworzyć nowy plik o nazwie `.env` w głównym folderze.
-2.  Wkleić do niego treść, którą mu wyślesz (Twoje klucze API i konfigurację bazy):
+### 2. Konfiguracja pliku .env
+```
+# --- AI CONFIG ---
+OPENROUTER_API_KEY=tutaj_wklej_swoj_klucz
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
-```env
-OPENAI_API_KEY=sk-....
-DATABASE_URL=postgresql://appuser:sekret@db:5432/transcriber_db
+# --- GOOGLE CALENDAR ---
+GOOGLE_CALENDAR_CLIENT_ID=
+GOOGLE_CALENDAR_CLIENT_SECRET=
+
+# --- BAZA DANYCH (Lokalna) ---
 POSTGRES_USER=appuser
 POSTGRES_PASSWORD=sekret
 POSTGRES_DB=transcriber_db
-... (reszta Twoich zmiennych)
+DATABASE_URL=postgresql://appuser:sekret@db:5432/transcriber_db
+```
 
-#### Krok D: Uruchomienie (Codzienna praca)
-
-Na Windowsie używa się `docker-compose` (zamiast `podman-compose`).
-
-**Terminal 1 (Backend + Baza):**
-```powershell
+### 3. Uruchomienie aplikacji
+```
 docker-compose up --build
-*(To postawi bazę i backend na localhost:8000)*
-
-**Terminal 2 (Frontend):**
-```powershell
-cd frontend
-npm install  # Tylko za pierwszym razem
-npm run dev
-*(To uruchomi Reacta na localhost:5173)*
-
-I to wszystko! Projekt będzie działał na Windowsie identycznie jak u Ciebie na Fedorze.
+```
