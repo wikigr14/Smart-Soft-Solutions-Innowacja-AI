@@ -2,18 +2,59 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from pydantic import BaseModel
+from typing import List, Optional
 from . import models, database
+from datetime import datetime
+
+
+# walidacja danych
+# zapisanie nowej transkrypcji
+class TranscriptCreate(BaseModel):
+    filename: str
+    full_text: str
+
+
+class TranscriptResponse(TranscriptCreate):
+    id: int
+    created_at: datetime
+    summary: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 
 # Inicjalizacja bazy i rozszerzenia pgvector przy starcie
 def init_db():
     try:
+        # rozszerzenia wektorowe
         with database.engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             conn.commit()
+        # tworzenie tabel na podstawie models.py
         models.Base.metadata.create_all(bind=database.engine)
+
+        # USER DO TESTOW --------------
+
+        db = database.SessionLocal()
+        test_user = (
+            db.query(models.User).filter(models.User.email == "test@elo.pl").first()
+        )
+        if not test_user:
+            test_user = models.User(
+                email="test@elo.pl",
+                hashed_password="elo123",
+            )
+            db.add(test_user)
+            db.commit()
+        db.close()
+
+        # -----------------------
+
         print("Database initialized successfully.")
     except Exception as e:
         print(f"Error initializing database: {e}")
+
 
 init_db()
 
@@ -34,9 +75,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def read_root():
     return {"status": "Backend is running", "database": "connected"}
+
 
 @app.get("/health")
 def health_check(db: Session = Depends(database.get_db)):
@@ -45,3 +88,34 @@ def health_check(db: Session = Depends(database.get_db)):
         return {"status": "ok"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# zapisanie danych
+@app.post("/transcripts/", response_model=TranscriptResponse)
+def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get_db)):
+    # biere test usera
+    user = db.query(models.User).filter(models.User.email == "test@elo.pl").first()
+    if not user:
+        raise HTTPException(status_code=500, detail="Test user not found")
+
+    # tworzony wpis w bazie
+    db_transcript = models.Transcript(
+        filename=item.filename, full_text=item.full_text, user_id=user.id
+    )
+
+    # zapis w bazie
+    db.add(db_transcript)
+    db.commit()
+    db.refresh(db_transcript)
+
+    return db_transcript
+
+
+# odczyt danych
+@app.get("/transcripts/", response_model=List[TranscriptResponse])
+def read_transcripts(db: Session = Depends(database.get_db)):
+    # pobiera liste transkrypcji tylko dla test usera!!!
+    user = db.query(models.User).filter(models.User.email == "test@elo.pl").first()
+    if not user:
+        return []
+    return user.transcripts
