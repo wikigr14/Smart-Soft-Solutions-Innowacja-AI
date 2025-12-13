@@ -1,9 +1,78 @@
+import { useState } from 'react'
+import './App.css'
+
+const API_URL = "http://localhost:8000" 
+
+// Główny komponent
 function App() {
+  // Stany
+  const [selectedFile, setSelectedFile] = useState(null) // Plik do wysłania
+  const [appStatus, setAppStatus] = useState("")         // Komunikaty dla usera
+
+  // HANDLERY
+
+  
+  // Zapisuje wybrany plik do stanu
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0])
+    setAppStatus("")
+  }
+
+  // Wysyła plik tekstowy do endpointu /upload/
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setAppStatus("⚠️ Wybierz plik!")
+      return
+    }
+
+    setAppStatus("Wysyłanie...")
+    
+    const formData = new FormData()
+    formData.append("file", selectedFile)
+
+    try {
+      // Wywołanie POST do API
+      const response = await fetch(`${API_URL}/upload/`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (response.ok) {
+        setAppStatus("✅ Plik zapisany w bazie!")
+        setSelectedFile(null)
+        // Czyszczenie inputu
+        document.querySelector('input[type="file"]').value = ""
+      } else {
+        const errorData = await response.json().catch(() => ({})); 
+        setAppStatus(`❌ Błąd serwera (${response.status}): ${errorData.detail || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Krytyczny błąd połączenia:", error)
+      setAppStatus(`❌ Błąd połączenia (Sprawdź, czy backend działa na ${API_URL})`)
+    }
+  }
+  
+  // TO WIDZI USER
   return (
-    <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "sans-serif" }}>
-      <h1>Hello World</h1>
-      <p>Hello World</p>
-      <p>Hello World</p>
+    <div className="container app-root-container">
+      <h1>AI Transcriber</h1>
+      <p className="subtitle">Wgraj przykładowy plik tekstowy (.txt), aby symulować transkrypcję.</p>
+
+      {/* Sekcja Uploadu */}
+      <div className="card">
+        <input 
+          type="file" 
+          accept=".txt" 
+          onChange={handleFileChange} 
+        />
+        <br/>
+        <button onClick={handleUpload} disabled={!selectedFile}>
+          Wyślij do Bazy
+        </button>
+        <p className="status">{appStatus}</p>
+      </div>
+      
+      {/* Sekcje historii usunięte */}
     </div>
   )
 }
