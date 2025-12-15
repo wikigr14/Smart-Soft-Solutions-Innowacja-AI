@@ -5,11 +5,8 @@ const API_URL = "http://localhost:8000"
 
 // Główny komponent
 function App() {
-  // Stany
   const [selectedFile, setSelectedFile] = useState(null) // Plik do wysłania
   const [appStatus, setAppStatus] = useState("")         // Komunikaty dla usera
-
-  // HANDLERY
 
   
   // Zapisuje wybrany plik do stanu
@@ -18,10 +15,10 @@ function App() {
     setAppStatus("")
   }
 
-  // Wysyła plik tekstowy do endpointu /upload/
+  // Wykonuje upload pliku 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setAppStatus("⚠️ Wybierz plik!")
+      setAppStatus("Wybierz plik!")
       return
     }
 
@@ -38,17 +35,17 @@ function App() {
       })
 
       if (response.ok) {
-        setAppStatus("✅ Plik zapisany w bazie!")
+        setAppStatus("Plik zapisany w bazie!")
         setSelectedFile(null)
         // Czyszczenie inputu
         document.querySelector('input[type="file"]').value = ""
       } else {
         const errorData = await response.json().catch(() => ({})); 
-        setAppStatus(`❌ Błąd serwera (${response.status}): ${errorData.detail || response.statusText}`);
+        setAppStatus(`Błąd serwera (${response.status}): ${errorData.detail || response.statusText}`);
       }
     } catch (error) {
-      console.error("Krytyczny błąd połączenia:", error)
-      setAppStatus(`❌ Błąd połączenia (Sprawdź, czy backend działa na ${API_URL})`)
+      console.error("Błąd połączenia:", error)
+      setAppStatus(`Błąd połączenia (Sprawdź, czy backend działa na ${API_URL})`)
     }
   }
   
@@ -58,7 +55,6 @@ function App() {
       <h1>AI Transcriber</h1>
       <p className="subtitle">Wgraj przykładowy plik tekstowy (.txt), aby symulować transkrypcję.</p>
 
-      {/* Sekcja Uploadu */}
       <div className="card">
         <input 
           type="file" 
@@ -71,8 +67,6 @@ function App() {
         </button>
         <p className="status">{appStatus}</p>
       </div>
-      
-      {/* Sekcje historii usunięte */}
     </div>
   )
 }
