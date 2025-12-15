@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -119,3 +119,34 @@ def read_transcripts(db: Session = Depends(database.get_db)):
     if not user:
         return []
     return user.transcripts
+
+
+@app.post("/upload/", response_model=TranscriptResponse)
+async def upload_text_file(
+    file: UploadFile = File(...), 
+    db: Session = Depends(database.get_db)
+):
+    # Pobieranie testowego usera
+    user = db.query(models.User).filter(models.User.email == "test@elo.pl").first()
+    if not user:
+        raise HTTPException(status_code=500, detail="Test user not found")
+
+    try:
+        # Odczytywanie treści pliku txt
+        content = await file.read()
+        text_content = content.decode("utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Błąd odczytu pliku: {str(e)}")
+
+    # Utworzenie wpisu w bazie
+    db_transcript = models.Transcript(
+        filename=file.filename,
+        full_text=text_content,
+        user_id=user.id
+    )
+
+    db.add(db_transcript)
+    db.commit()
+    db.refresh(db_transcript)
+
+    return db_transcript
