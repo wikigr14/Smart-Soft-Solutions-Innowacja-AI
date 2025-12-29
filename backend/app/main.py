@@ -24,6 +24,17 @@ class TranscriptResponse(TranscriptCreate):
         from_attributes = True
 
 
+
+# Schematy dla RAG
+class ChatRequest(BaseModel):
+    question: str
+    transcript_id: Optional[int] = None
+
+class ChatResponse(BaseModel):
+    answer: str
+    context_chunks: List[str]
+
+
 # Inicjalizacja bazy i rozszerzenia pgvector przy starcie
 def init_db():
     try:
@@ -174,3 +185,39 @@ async def upload_text_file(
     process_ai_chunks(db_transcript.id, text_content, db)
 
     return db_transcript
+
+
+
+# Logika odczytu (RAG) 
+@app.post("/chat/", response_model=ChatResponse)
+def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
+    # Wektoryzacja pytania
+    query_vector = ai_service.get_embedding(request.question)
+    
+    if not query_vector:
+        raise HTTPException(status_code=500, detail="Błąd wektoryzacji pytania")
+
+    # Szukanie pasujacych fragmentow w bazie
+    query = db.query(models.TranscriptChunk)
+    
+    if request.transcript_id:
+        query = query.filter(models.TranscriptChunk.transcript_id == request.transcript_id)
+    
+    # Szukanie najwiekszego podobienstwa
+    best_chunks = query.order_by(
+        models.TranscriptChunk.embedding.cosine_distance(query_vector)
+    ).limit(3).all()
+
+    if not best_chunks:
+        return ChatResponse(
+            answer="Brak pasujących informacji w bazie.", 
+            context_chunks=[]
+        )
+
+    # Wyciąganie tekstu
+    context_texts = [c.chunk_text for c in best_chunks]
+    
+    return ChatResponse(
+        answer=f"Znalazlem {len(context_texts)} pasujace fragmenty.",
+        context_chunks=context_texts
+    )
