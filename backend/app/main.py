@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel
 from typing import List, Optional
-from . import models, database
+from . import models, database, ai_service
 from datetime import datetime
 
 
@@ -60,11 +60,13 @@ init_db()
 
 app = FastAPI(title="AI Transcriber API")
 
-# --- KONFIGURACJA CORS
+# KONFIGURACJA CORS
 origins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
 
 app.add_middleware(
@@ -90,6 +92,26 @@ def health_check(db: Session = Depends(database.get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def process_ai_chunks(transcript_id, full_text, db):
+    # ai processing
+    chunks = ai_service.chunk_text(full_text)
+    print(f"tekst zostal podzielony na {len(chunks)} kawalkow")
+
+    # wektoryacja i zapis chunkow
+    for index, chunk_content in enumerate(chunks):
+        vector = ai_service.get_embedding(chunk_content)
+        if vector:
+            db_chunk = models.TranscriptChunk(
+                transcript_id=transcript_id,
+                chunk_index=index,
+                chunk_text=chunk_content,
+                embedding=vector,
+            )
+            db.add(db_chunk)
+    db.commit()
+
+
+# ENDPOINTY
 # zapisanie danych
 @app.post("/transcripts/", response_model=TranscriptResponse)
 def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get_db)):
@@ -98,7 +120,7 @@ def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get
     if not user:
         raise HTTPException(status_code=500, detail="Test user not found")
 
-    # tworzony wpis w bazie
+    # tworzony wpis transkrypcji w bazie
     db_transcript = models.Transcript(
         filename=item.filename, full_text=item.full_text, user_id=user.id
     )
@@ -107,6 +129,8 @@ def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get
     db.add(db_transcript)
     db.commit()
     db.refresh(db_transcript)
+
+    process_ai_chunks(db_transcript.id, item.full_text, db)
 
     return db_transcript
 
@@ -121,6 +145,7 @@ def read_transcripts(db: Session = Depends(database.get_db)):
     return user.transcripts
 
 
+# upload pliku txt
 @app.post("/upload/", response_model=TranscriptResponse)
 async def upload_text_file(
     file: UploadFile = File(...), db: Session = Depends(database.get_db)
@@ -145,5 +170,7 @@ async def upload_text_file(
     db.add(db_transcript)
     db.commit()
     db.refresh(db_transcript)
+
+    process_ai_chunks(db_transcript.id, text_content, db)
 
     return db_transcript

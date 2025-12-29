@@ -47,7 +47,25 @@ class Transcript(Base):
     # wydarzenia do kalendarza (OAuth2)
     calendar_events = Column(JSON, nullable=True)
 
-    # Wektor do wyszukiwania ((narazie zostawiam 1536 ale to do sprawdzenia z HuggingFace i odpowiednim modelem!!!)
-    embedding = Column(Vector(1536), nullable=True)
+    # embedding = Column(Vector(1536), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    chunks = relationship(
+        "TranscriptChunk", back_populates="transcript", cascade="all, delete-orphan"
+    )
+
+
+class TranscriptChunk(Base):
+    __tablename__ = "transcript_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    transcript_id = Column(Integer, ForeignKey("transcripts.id"), nullable=False)
+
+    chunk_index = Column(Integer)
+    chunk_text = Column(Text, nullable=False)
+
+    # wymiar 384 dla all-MiniLM-L6-v2
+    embedding = Column(Vector(384), nullable=True)
+
+    transcript = relationship("Transcript", back_populates="chunks")
