@@ -8,3 +8,5 @@ asyncpg
 google-api-python-client
 pgvector
 python-multipart
+sentence-transformers
+langchain-text-splitters

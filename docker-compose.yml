@@ -25,13 +25,14 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app:Z
+      - huggingface_cache:/root/.cache/huggingface
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "5174:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -40,3 +41,4 @@ services:
 
 volumes:
   postgres_data:
+  huggingface_cache:
