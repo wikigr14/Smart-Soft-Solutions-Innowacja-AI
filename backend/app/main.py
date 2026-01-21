@@ -24,11 +24,11 @@ class TranscriptResponse(TranscriptCreate):
         from_attributes = True
 
 
-
 # Schematy dla RAG
 class ChatRequest(BaseModel):
     question: str
     transcript_id: Optional[int] = None
+
 
 class ChatResponse(BaseModel):
     answer: str
@@ -141,7 +141,8 @@ def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get
     db.commit()
     db.refresh(db_transcript)
 
-    process_ai_chunks(db_transcript.id, item.full_text, db)
+    process_transcript_full(db_transcript.id, item.full_text, db)
+    db.refresh(db_transcript)
 
     return db_transcript
 
@@ -156,10 +157,24 @@ def read_transcripts(db: Session = Depends(database.get_db)):
     return user.transcripts
 
 
+# do przetwarzania i generowania podsumowan
+def process_transcript_full(transcript_id, full_text, db: Session):
+    # embedding
+    process_ai_chunks(transcript_id, full_text, db)
+    # generowanie podsumowania przez openrouter
+    summary_text = ai_service.generate_summary(full_text)
+    # aktualizacja w bazie
+    db_transcript = db.query(models.Transcript).filter(models.Transcript.id == transcript_id).first()
+    if db_transcript:
+        db_transcript.summary = summary_text
+        db.commit()
+        db.refresh(db_transcript)
+
+
 # upload pliku txt
 @app.post("/upload/", response_model=TranscriptResponse)
 async def upload_text_file(
-    file: UploadFile = File(...), db: Session = Depends(database.get_db)
+        file: UploadFile = File(...), db: Session = Depends(database.get_db)
 ):
     # Pobieranie testowego usera
     user = db.query(models.User).filter(models.User.email == "test@elo.pl").first()
@@ -182,27 +197,27 @@ async def upload_text_file(
     db.commit()
     db.refresh(db_transcript)
 
-    process_ai_chunks(db_transcript.id, text_content, db)
+    process_transcript_full(db_transcript.id, text_content, db)
+    db.refresh(db_transcript)
 
     return db_transcript
 
 
-
-# Logika odczytu (RAG) 
+# Logika odczytu (RAG)
 @app.post("/chat/", response_model=ChatResponse)
 def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
     # Wektoryzacja pytania
     query_vector = ai_service.get_embedding(request.question)
-    
+
     if not query_vector:
         raise HTTPException(status_code=500, detail="Błąd wektoryzacji pytania")
 
     # Szukanie pasujacych fragmentow w bazie
     query = db.query(models.TranscriptChunk)
-    
+
     if request.transcript_id:
         query = query.filter(models.TranscriptChunk.transcript_id == request.transcript_id)
-    
+
     # Szukanie najwiekszego podobienstwa
     best_chunks = query.order_by(
         models.TranscriptChunk.embedding.cosine_distance(query_vector)
@@ -210,13 +225,13 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
 
     if not best_chunks:
         return ChatResponse(
-            answer="Brak pasujących informacji w bazie.", 
+            answer="Brak pasujących informacji w bazie.",
             context_chunks=[]
         )
 
     # Wyciąganie tekstu
     context_texts = [c.chunk_text for c in best_chunks]
-    
+
     return ChatResponse(
         answer=f"Znalazlem {len(context_texts)} pasujace fragmenty.",
         context_chunks=context_texts
