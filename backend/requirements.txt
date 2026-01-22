@@ -10,3 +10,6 @@ pgvector
 python-multipart
 sentence-transformers
 langchain-text-splitters
+google-auth
+google-auth-oauthlib
+google-api-python-client

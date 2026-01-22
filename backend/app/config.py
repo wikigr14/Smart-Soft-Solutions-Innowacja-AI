@@ -11,3 +11,8 @@ if not DATABASE_URL:
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 # Domyślny base URL dla OpenRoutera
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+
+# Konfiguracja dla Google Calendar API
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CALENDAR_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CALENDAR_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_CALENDAR_REDIRECT_URI")
