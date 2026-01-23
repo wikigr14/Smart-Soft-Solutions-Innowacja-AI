@@ -10,13 +10,13 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
 def get_auth_url():
     # generuje link w ktory musi kliknac uzytkownik by sie zalogowac.
-    flow = Flow.flow.from_client_config(
+    flow = Flow.from_client_config(
         {
             "web": {
                 "client_id": config.GOOGLE_CLIENT_ID,
                 "client_secret": config.GOOGLE_CLIENT_SECRET,
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://accounts.google.com/token",
+                "token_uri": "https://oauth2.googleapis.com/token",
             }
         },
         scopes=SCOPES,
@@ -26,7 +26,7 @@ def get_auth_url():
     return auth_url
 
 
-def get_credentials():
+def get_credentials(code: str):
     # daje stale tokeny dostepu
     flow = Flow.from_client_config(
         {
@@ -34,7 +34,7 @@ def get_credentials():
                 "client_id": config.GOOGLE_CLIENT_ID,
                 "client_secret": config.GOOGLE_CLIENT_SECRET,
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://accounts.google.com/token",
+                "token_uri": "https://oauth2.googleapis.com/token",
             }
         },
         scopes=SCOPES,

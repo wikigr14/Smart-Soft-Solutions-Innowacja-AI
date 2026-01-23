@@ -6,6 +6,9 @@ from pydantic import BaseModel
 from typing import List, Optional
 from . import models, database, ai_service
 from datetime import datetime
+from fastapi.responses import RedirectResponse
+from . import google_service
+import json
 
 
 # walidacja danych
@@ -163,6 +166,23 @@ def process_transcript_full(transcript_id, full_text, db: Session):
     process_ai_chunks(transcript_id, full_text, db)
     # generowanie podsumowania przez openrouter
     summary_text = ai_service.generate_summary(full_text)
+    # test google calendar
+    meeting_data = ai_service.extract_event_json(full_text)
+    calendar_link = None
+    if meeting_data:
+        # pobieranie usera
+        transcript = db.query(models.Transcript).filter(models.Transcript.id == transcript_id).first()
+        user = transcript.owner
+        # sprawdzenie czy user jest zalogowany do google
+        if user.google_credentials:
+            # casting cred_data na dict jesli jest stringiem
+            cred_data = user.google_credentials
+            if isinstance(cred_data, str):
+                cred_data = json.loads(cred_data)
+            link = google_service.create_calendar_event(cred_data, meeting_data)
+            if link:
+                calendar_link = link
+                summary_text += f"\nUtwórz wydarzenie w kalendarzu: {calendar_link}"
     # aktualizacja w bazie
     db_transcript = db.query(models.Transcript).filter(models.Transcript.id == transcript_id).first()
     if db_transcript:
@@ -236,3 +256,31 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
         answer=f"Znalazlem {len(context_texts)} pasujace fragmenty.",
         context_chunks=context_texts
     )
+
+
+# rzeczy do autoryzacji google
+
+@app.get("/auth/login")
+def login_google():
+    # przekierowuje do logowania do google
+    # http://localhost:8000/auth/login
+    auth_url = google_service.get_auth_url()
+    return {"auth_url": auth_url}
+
+
+@app.get("/auth/callback")
+def auth_callback(code: str, db: Session = Depends(database.get_db)):
+    # odbiera kod od google i zapisuje tokeny dla usera (teraz tylko test_user)
+    try:
+        cred = google_service.get_credentials(code)
+        # zapis tokenow do bazy (teraz tylko dla test user)
+        cred_json = cred.to_json()
+        user = db.query(models.User).filter(models.User.email == "test@elo.pl").first()
+        if user:
+            user.google_credentials = cred_json  # sqlalchemy powinien sam zmapowac
+            db.commit()
+            return {"status": "Logowanie pomyślne. Można zamknąć okno"}
+        else:
+            raise HTTPException(status_code=404, detail="Nie znaleziono użytkownika")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Błąd autoryzacji {str(e)}")

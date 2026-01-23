@@ -4,6 +4,7 @@ from openai import OpenAI
 from . import config
 import json
 import re
+from datetime import datetime
 
 # inicjalizacja openroutera
 client = OpenAI(
@@ -35,7 +36,7 @@ def get_embedding(text):
 def generate_summary(text: str) -> str:
     # funkcja ma za zadanie wyslac tekst do openroutera zeby ten wygenerowal podsumowanie
     try:
-        prompt = f"Jesteś asystentem AI. Przeanalizuj poniższą transkrypcję spotkania. Stwórz zwięzłe podsumowanie tego spotkania. Jeśli to możliwe możesz rozbić to podsumowanie na punkty. Jeśli w poniższym tekście jest poruszony temat i data jakiegoś spotkania to wypisz je jeszcze raz na samym końcu w formacie: DATA: Temat spotkania (lub jeśli jego temat nie został podany to poprostu Spotkanie).\nTreść transkrypcji:\n{text}"
+        prompt = f"Jesteś asystentem AI. Przeanalizuj poniższą transkrypcję spotkania. Stwórz zwięzłe podsumowanie tego spotkania. Jeśli to możliwe możesz rozbić to podsumowanie na punkty. Jeśli w poniższym tekście jest poruszony temat i data jakiegoś spotkania to wypisz je jeszcze raz na samym końcu w formacie:\nSpotkanie: DATA - Temat spotkania (lub jeśli jego temat nie został podany to poprostu Spotkanie).\nTreść transkrypcji:\n{text}"
         response = client.chat.completions.create(
             model="meta-llama/llama-3.3-70b-instruct:free",
             # zeby zmienic skopiowac link do innego modelu z https://openrouter.ai/models !!!WYBRAC DARMOWY MODEL!!!
@@ -53,17 +54,19 @@ def generate_summary(text: str) -> str:
 def extract_event_json(text: str):
     # analizuje tekst w celu znalezienia informacji o spotkaniu
     try:
+        current_date = datetime.now().strftime("%Y-%m-%d (%A")
         # prompt do AI zeby dal info o spotkaniu w formacie json
         prompt = (
             "Przeanalizuj poniższy tekst. Jeśli znajduje się w nim informacja o planowanym spotkaniu (data, godzina) to zwróć TYLKO kod JSON w tym formacie:\n"
+            f"Dzisiaj jest: {current_date}. To WAŻNA informacja jeśli mowa jest, że spotkanie odbędzie się np. za tydzień.\n"
             "{\n"
             ' "summary": "Temat spotkania",\n'
             ' "start_time": YYYY-MM-DDTHH:MM:SS",\n'
             ' "end_time": YYYY-MM-DDTHH:MM:SS"\n'
             "}\n"
             "Jeśli nie ma daty, zwróć puste nawiasy {}.\n"
-            "Jeśli nie podano TYLKO czasu zakończenia spotkania to załóż, że trwa ono 1 godzinę.\n"
-            "Jeśli nie podano czasu rozpoczęcia to załóż, że spotkanie trwa przez cały dzień.\n"
+            "Jeśli nie podano TYLKO czasu zakończenia/trwania spotkania to załóż, że trwa ono 1 godzinę.\n"
+            "Data musi być w formacie ISO 8601.\n"
             f"Tekst do analizy:\n{text}"
         )
         response = client.chat.completions.create(
@@ -73,15 +76,14 @@ def extract_event_json(text: str):
                 {"role": "system", "content": "Jesteś asystentem do API. Zwracasz TYLKO czysty kod JSON."},
                 {"role": "user", "content": prompt}
             ],
-            response_format={"type": "json_object"}
-            # wymuszenie zwrocona wartosc byla w formacie JSON bo niektore modele to potrafia
         )
         content = response.choices[0].message.content
         # w razie gdyby model oszukal z outputem i oprocz samego kodu json zwrocil tez jakies swoje mysli
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
         if json_match:
             event_data = json.loads(json_match.group(0))
-            return event_data
+            if "start_time" in event_data and event_data["start_time"]:
+                return event_data
         return None
     except Exception as e:
         print(f"Błąd ekstraktowania danych o spotkaniu w formacie JSON: {e}")
