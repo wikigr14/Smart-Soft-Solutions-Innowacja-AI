@@ -12,3 +12,6 @@ sentence-transformers
 langchain-text-splitters
 google-auth
 google-auth-oauthlib
+python-jose[cryptography]
+passlib
+bcrypt==3.2.2

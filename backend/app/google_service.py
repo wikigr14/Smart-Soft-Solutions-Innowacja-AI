@@ -49,19 +49,18 @@ def create_calendar_event(cred_json: dict, event_data: dict):
     try:
         cred = Credentials.from_authorized_user_info(cred_json, SCOPES)
         service = build('calendar', 'v3', credentials=cred)
-        event = {
-            'summary': event_data.get('summary', 'Spotkanie z transkrypcji'),
-            'description': event_data.get('description', 'Opis wygenerowany przez AI'),
-            'start': {
-                'dateTime': event_data['start_time'],  # format to 'YYYY-MM-DDTHH:MiMi:SS'
-                'timeZone': 'Europe/Warsaw',
-            },
-            'end': {
-                'dateTime': event_data['end_time'],
-                'timeZone': 'Europe/Warsaw',
-            },
+        event_body = {
+            'summary': event_data.get('summary', 'Spotkanie'),
+            'description': event_data.get('description', ''),
         }
-        event_final = service.events().insert(calendarId='primary', body=event).execute()
+        # obsluga w zaleznosci czy spotkanie jest calodniowe czy na pare godzin
+        if event_data.get('is_all_day'):
+            event_body['start'] = {'date': event_data['start_date']}
+            event_body['end'] = {'date': event_data['end_date']}
+        else:
+            event_body['start'] = {'dateTime': event_data['start_time'], 'timeZone': 'Europe/Warsaw'}
+            event_body['end'] = {'dateTime': event_data['end_time'], 'timeZone': 'Europe/Warsaw'}
+        event_final = service.events().insert(calendarId='primary', body=event_body).execute()
         return event_final.get('htmlLink')
     except Exception as e:
         print(f"Błąd usługi Google Calendar: {e}")

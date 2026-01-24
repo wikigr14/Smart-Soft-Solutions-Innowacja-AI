@@ -54,15 +54,22 @@ def generate_summary(text: str) -> str:
 def extract_event_json(text: str):
     # analizuje tekst w celu znalezienia informacji o spotkaniu
     try:
-        current_date = datetime.now().strftime("%Y-%m-%d (%A")
+        current_date = datetime.now().strftime("%Y-%m-%d (%A)")
         # prompt do AI zeby dal info o spotkaniu w formacie json
         prompt = (
-            "Przeanalizuj poniższy tekst. Jeśli znajduje się w nim informacja o planowanym spotkaniu (data, godzina) to zwróć TYLKO kod JSON w tym formacie:\n"
+            "Przeanalizuj poniższy tekst. Jeśli jest w nim informacja o spotkaniu, zwróć kod JSON.\n"
+            "Jeśli NIE podano godziny, tylko samą datę to użyj 'start_date' i 'end_date' w formacie (YYYY-MM-DD) i zaznacz 'is_all_day': true.\n"
+            "Jeśli podano godzinę to użyj 'start_time' i 'end_time' w formacie (YYYY-MM-DDTHH:MM:SS).\n"
             f"Dzisiaj jest: {current_date}. To WAŻNA informacja jeśli mowa jest, że spotkanie odbędzie się np. za tydzień.\n"
+            "Format JSON:\n"
             "{\n"
             ' "summary": "Temat spotkania",\n'
+            ' "description": "Krótki opis",\n'
+            ' "is_all_day": "true/false",\n"'
             ' "start_time": YYYY-MM-DDTHH:MM:SS",\n'
-            ' "end_time": YYYY-MM-DDTHH:MM:SS"\n'
+            ' "end_time": YYYY-MM-DDTHH:MM:SS",\n'
+            ' "start_date": "YYYY-MM-DD",\n'
+            ' "end_date": "YYYY-MM-DD"\n'
             "}\n"
             "Jeśli nie ma daty, zwróć puste nawiasy {}.\n"
             "Jeśli nie podano TYLKO czasu zakończenia/trwania spotkania to załóż, że trwa ono 1 godzinę.\n"
@@ -82,7 +89,7 @@ def extract_event_json(text: str):
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
         if json_match:
             event_data = json.loads(json_match.group(0))
-            if "start_time" in event_data and event_data["start_time"]:
+            if "start_time" in event_data or "start_date" in event_data:
                 return event_data
         return None
     except Exception as e:
