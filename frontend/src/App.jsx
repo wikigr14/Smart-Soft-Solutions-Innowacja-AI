@@ -6,9 +6,9 @@ const API_URL = "http://localhost:8000"
 // Główny komponent
 function App() {
     //Autoryzacja
-    const [token, setToken] = useState(localStorage.getItem("token"))
-    const [user, setUser] = useState(null)
-    const [authMode, setAuthMode] = useState("login")//login lub register
+    const [token, setToken] = useState(localStorage.getItem("token")) //token z pamieci przegladarki
+    const [user, setUser] = useState(null) //dane zalogowanego uzytkownika
+    const [authMode, setAuthMode] = useState("login")//formularz w trybie login lub register
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     //Aplikacja
@@ -18,10 +18,12 @@ function App() {
 
     //sprawdzanie logowania z google
     useEffect(() => {
+        //odpalana przy wlaczeniu strony
         const params = new URLSearchParams(window.location.search)
-        //szukanie parametru google_code
+        //szukanie parametru google_code (powrot z logowania google)
         const googleCode = params.get("google_code")
         if (googleCode && token) {
+            //jesli znaleziono laczy konta
             connectGoogleAccount(googleCode)
         } else if (token) {
             fetchUserData()
@@ -30,15 +32,16 @@ function App() {
 
     //pobieranie danych usera
     const fetchUserData = async () => {
+        //pobiera dane profilu z backendu
         try {
             const res = await fetch(`${API_URL}/users/me`, {
                 headers: {"Authorization": `Bearer ${token}`}
             })
             if (res.ok) {
                 const data = await res.json()
-                setUser(data)
+                setUser(data)//zapisuje dane usera
             } else {
-                logout()
+                logout()//jesli token stracil waznosc logout
             }
         } catch (e) {
             console.error(e)
@@ -48,6 +51,7 @@ function App() {
 
     //laczenie z kontem google
     const connectGoogleAccount = async (code) => {
+        //kod autoryzacyjny google wysylany do backendu w celu zamiany na tokeny
         try {
             const res = await fetch(`${API_URL}/auth/google/connect`, {
                 method: "POST",
@@ -81,10 +85,12 @@ function App() {
     //obsluga logowania i rejestracji
 
     const handleAuth = async (e) => {
+        //obsluga formularza logowania lub rejestracji
         e.preventDefault()
         const endpoint = authMode === "login" ? "/token" : "/register"
 
         let body, headers = {}
+        //konfiguracja w zaleznosci czy lgoowanie czy rejestracja
         if (authMode === "login") {
             //formData dla OAuth2
             const formData = new URLSearchParams()
@@ -97,6 +103,7 @@ function App() {
             headers = {"Content-Type": "application/json"}
             body = JSON.stringify({email, password})
         }
+        //wysylanie zadania i zapisanie tokenow
         try {
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: "POST",
@@ -121,6 +128,7 @@ function App() {
     }
 
     const handleGoogleLinkClick = async () => {
+        //pobiera z backendu url do zalogowania uzytkownika w google
         try {
             const res = await fetch(`${API_URL}/auth/google/url`, {
                 headers: {"Authorization": `Bearer ${token}`}
@@ -135,6 +143,7 @@ function App() {
     }
 
     const addToCalendar = async () => {
+        //wysyla zadanie utworzenia wydarzenia w kalendarzu
         if (!transcriptResult || !transcriptResult.id) {
             return;
         }
@@ -146,6 +155,7 @@ function App() {
             const data = await res.json()
             if (res.ok) {
                 alert("Dodano wydarzenie")
+                // jesli da sie dodac wydarzenie to otwieramy kalendarz w nowej karcie
                 window.open(data.link, '_blank')
             } else {
                 alert("Wystąpił błąd podczas dodawania wydarzenia")

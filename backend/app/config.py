@@ -20,4 +20,5 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_CALENDAR_REDIRECT_URI")
 # Konfiguracja dla logowania/rejestracji, tokenow uzytkownika i sesji
 AUTH_KEY = os.getenv("AUTH_KEY")
 AUTH_ALGORITHM = os.getenv("AUTH_ALGORITHM")
+# dlugosc sescji uzytkownika, bazowo to co zapisane w .env jak brakuje to automatycznie 60 minut
 ACCESS_TOKEN_EXPIRE_TIME_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_TIME_MINUTES", 60))

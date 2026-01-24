@@ -9,7 +9,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
 
 def get_auth_url():
-    # generuje link w ktory musi kliknac uzytkownik by sie zalogowac.
+    # tworzy url do strony logowania google na ktora przechodzi uzytkownik
     flow = Flow.from_client_config(
         {
             "web": {
@@ -47,8 +47,10 @@ def get_credentials(code: str):
 def create_calendar_event(cred_json: dict, event_data: dict):
     # glowna funkcja, tworzy wydarzenie w kalendarzu uzytkownika
     try:
+        # odtworzenie obiektu z danych json
         cred = Credentials.from_authorized_user_info(cred_json, SCOPES)
         service = build('calendar', 'v3', credentials=cred)
+        # budowanie ciala obiektu
         event_body = {
             'summary': event_data.get('summary', 'Spotkanie'),
             'description': event_data.get('description', ''),
@@ -60,6 +62,7 @@ def create_calendar_event(cred_json: dict, event_data: dict):
         else:
             event_body['start'] = {'dateTime': event_data['start_time'], 'timeZone': 'Europe/Warsaw'}
             event_body['end'] = {'dateTime': event_data['end_time'], 'timeZone': 'Europe/Warsaw'}
+        # zadanie do api google
         event_final = service.events().insert(calendarId='primary', body=event_body).execute()
         return event_final.get('htmlLink')
     except Exception as e:

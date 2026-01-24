@@ -88,19 +88,23 @@ app.add_middleware(
 
 @app.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(database.get_db)):
+    # sprawdza czy email juz istnieje w bazie
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Użytkownik o podanym adresie Email już istnieje")
+    # hasuje haslo i przypisuje do usera potem pcha do bazy
     hashed_pwd = auth.get_password_hash(user.password)
     new_user = models.User(email=user.email, hashed_password=hashed_pwd)
     db.add(new_user)
     db.commit()
+    # po rejestracji automatycznie loguje uzytkownika
     access_token = auth.create_access_token(data={"sub": new_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    # sprawdza czy user istnieje i jego dane sa zgodne z podanymi w formularzu, jesli tak to loguje uzytkownika
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Niepoprawny email lub hasło")
@@ -110,7 +114,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @app.get("/users/me")
 def read_user_me(current_user: models.User = Depends(auth.get_current_user)):
-    # zwraca info o zalogowanym userze (email, i czy konto google jest podpiete)
+    # zwraca info o zalogowanym userze (email, i czy konto google jest podpiete) przez token
     return {
         "email": current_user.email,
         "is_google_connected": current_user.google_credentials is not None
@@ -175,6 +179,7 @@ def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get
 @app.get("/transcripts/", response_model=List[TranscriptResponse])
 def read_transcripts(db: Session = Depends(database.get_db),
                      current_user: models.User = Depends(auth.get_current_user)):
+    # zwraca liste transkrypcji nalezacych do danego uzytkownika
     return current_user.transcripts
 
 
@@ -261,18 +266,20 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
 # rzeczy do autoryzacji google
 @app.get("/auth/google/url")
 def get_google_auth_url(current_user: models.User = Depends(auth.get_current_user)):
+    # link do przekierowania uzytkownika zeby zalogowal sie do konta google i dal permisje na edycje kalendarza
     return {"url": google_service.get_auth_url()}
 
 
 @app.get("/auth/callback")
 def auth_callback(code: str, db: Session = Depends(database.get_db)):
-    # przekierowuje na frontend
+    # google przekierowuje uzytkownika na frontend po pomyslnym zalogowaniu
     return RedirectResponse(f"http://localhost:5174?google_code={code}")
 
 
 @app.post("/auth/google/connect")
 def connect_google_account(body: dict, db: Session = Depends(database.get_db),
                            current_user: models.User = Depends(auth.get_current_user)):
+    # zmienia kod na tokeny i zapisuje w bazie
     code = body.get("code")
     cred = google_service.get_credentials(code)
     current_user.google_credentials = cred.to_json()
@@ -283,15 +290,19 @@ def connect_google_account(body: dict, db: Session = Depends(database.get_db),
 @app.post("/transcripts/{transcript_id}/create_event")
 def create_event_in_google(transcript_id: int, db: Session = Depends(database.get_db),
                            current_user: models.User = Depends(auth.get_current_user)):
+    # pobiera transkrypcje i sprawdza czy zawiera w sobie wydarzenie
     transcript = db.query(models.Transcript).filter(models.Transcript.id == transcript_id,
                                                     models.Transcript.user_id == current_user.id).first()
     if not transcript or not transcript.calendar_events:
         raise HTTPException(status_code=404, detail="Nie wykryto spotkania do dodania")
+    # sprawdzenie czy konto google polaczone z kontem uzytkownika
     if not current_user.google_credentials:
         raise HTTPException(status_code=400, detail="Nie połączono z kontem Google")
+    # wywolanie uslugi tworzenia kalendarza
     cred = json.loads(current_user.google_credentials) if isinstance(current_user.google_credentials,
                                                                      str) else current_user.google_credentials
     link = google_service.create_calendar_event(cred, transcript.calendar_events)
+    # zwraca link do wydarzenia
     if link:
         return {"link": link}
     else:
