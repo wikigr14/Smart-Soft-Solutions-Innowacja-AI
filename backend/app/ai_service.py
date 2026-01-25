@@ -12,7 +12,14 @@ client = OpenAI(
     api_key=config.OPENROUTER_API_KEY,
 )
 
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+# chyba podmianka modelu bo cienko z kontekstami
+# ten slabo pod katem jezyka polskiego
+# model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+# podmianka na multilingual model
+model = SentenceTransformer(
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
 
 
 def chunk_text(text, chunk_size=500, chunk_overlap=50):
@@ -43,8 +50,9 @@ def generate_summary(text: str) -> str:
             # zeby zmienic skopiowac link do innego modelu z https://openrouter.ai/models !!!WYBRAC DARMOWY MODEL!!!
             messages=[
                 {"role": "system", "content": "Jesteś asystentem biurowym AI."},
-                {"role": "user", "content": prompt}
-            ])
+                {"role": "user", "content": prompt},
+            ],
+        )
         # zwrocenie odpowiedz wygenerowanej przez ai
         return response.choices[0].message.content
     except Exception as e:
@@ -59,22 +67,46 @@ def extract_event_json(text: str):
         current_date = datetime.now().strftime("%Y-%m-%d (%A)")
         # prompt do AI zeby dal info o spotkaniu w formacie json
         # !!RACZEJ!! NIE RUSZAC
+        # prompt = (
+        #     "Przeanalizuj poniższy tekst. Jeśli jest w nim informacja o spotkaniu, zwróć kod JSON.\n"
+        #     "Jeśli NIE podano godziny, tylko samą datę to użyj 'start_date' i 'end_date' w formacie (YYYY-MM-DD) i zaznacz 'is_all_day': true.\n"
+        #     "Jeśli podano godzinę to użyj 'start_time' i 'end_time' w formacie (YYYY-MM-DDTHH:MM:SS).\n"
+        #     f"Dzisiaj jest: {current_date}. To WAŻNA informacja jeśli mowa jest, że spotkanie odbędzie się np. za tydzień.\n"
+        #     "Format JSON:\n"
+        #     "{\n"
+        #     ' "summary": "Temat spotkania",\n'
+        #     ' "description": "Krótki opis",\n'
+        #     ' "is_all_day": "true/false",\n"'
+        #     ' "start_time": YYYY-MM-DDTHH:MM:SS",\n'
+        #     ' "end_time": YYYY-MM-DDTHH:MM:SS",\n'
+        #     ' "start_date": "YYYY-MM-DD",\n'
+        #     ' "end_date": "YYYY-MM-DD"\n'
+        #     "}\n"
+        #     "Jeśli nie ma daty, zwróć puste nawiasy {}.\n"
+        #     "Jeśli nie podano TYLKO czasu zakończenia/trwania spotkania to załóż, że trwa ono 1 godzinę.\n"
+        #     "Data musi być w formacie ISO 8601.\n"
+        #     f"Tekst do analizy:\n{text}"
+        # )
         prompt = (
-            "Przeanalizuj poniższy tekst. Jeśli jest w nim informacja o spotkaniu, zwróć kod JSON.\n"
+            "Przeanalizuj poniższy tekst i znajdź WSZYSTKIE wzmianki o planowanych spotkaniach.\n"
+            'Zwróć wynik jako TABLICĘ JSON (lista obiektów), np.: [{"summary": ...}, {"summary": ...}].\n'
+            "Nawet jeśli jest tylko jedno spotkanie, zwróć je w tablicy [].\n"
             "Jeśli NIE podano godziny, tylko samą datę to użyj 'start_date' i 'end_date' w formacie (YYYY-MM-DD) i zaznacz 'is_all_day': true.\n"
             "Jeśli podano godzinę to użyj 'start_time' i 'end_time' w formacie (YYYY-MM-DDTHH:MM:SS).\n"
-            f"Dzisiaj jest: {current_date}. To WAŻNA informacja jeśli mowa jest, że spotkanie odbędzie się np. za tydzień.\n"
-            "Format JSON:\n"
-            "{\n"
-            ' "summary": "Temat spotkania",\n'
-            ' "description": "Krótki opis",\n'
-            ' "is_all_day": "true/false",\n"'
-            ' "start_time": YYYY-MM-DDTHH:MM:SS",\n'
-            ' "end_time": YYYY-MM-DDTHH:MM:SS",\n'
-            ' "start_date": "YYYY-MM-DD",\n'
-            ' "end_date": "YYYY-MM-DD"\n'
-            "}\n"
-            "Jeśli nie ma daty, zwróć puste nawiasy {}.\n"
+            f"Dzisiaj jest: {current_date}. Oblicz daty relatywne (np. 'przyszła środa').\n"
+            "Wymagany format JSON:\n"
+            "[\n"
+            "  {\n"
+            '    "summary": "Tytuł",\n'
+            '    "description": "Opis",\n'
+            '    "is_all_day": false,\n'
+            '    "start_time": "YYYY-MM-DDTHH:MM:SS",\n'
+            '    "end_time": "YYYY-MM-DDTHH:MM:SS"\n'
+            '    "start_date": "YYYY-MM-DD",\n'
+            '    "end_date": "YYYY-MM-DD"\n'
+            "  }\n"
+            "]\n"
+            "Jeśli nie ma spotkań, zwróć pustą tablicę [].\n"
             "Jeśli nie podano TYLKO czasu zakończenia/trwania spotkania to załóż, że trwa ono 1 godzinę.\n"
             "Data musi być w formacie ISO 8601.\n"
             f"Tekst do analizy:\n{text}"
@@ -84,20 +116,35 @@ def extract_event_json(text: str):
             model="meta-llama/llama-3.3-70b-instruct:free",
             # zeby zmienic skopiowac link do innego modelu z https://openrouter.ai/models !!!WYBRAC DARMOWY MODEL!!!
             messages=[
-                {"role": "system", "content": "Jesteś asystentem do API. Zwracasz TYLKO czysty kod JSON."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "Jesteś asystentem do API. Zwracasz TYLKO czysty kod JSON.",
+                },
+                {"role": "user", "content": prompt},
             ],
         )
         content = response.choices[0].message.content
+
+        # podglad odpowiedzi modelu w logach
+        print(f"DEBUG AI RESPONSE:\n{content}")
+
         # w razie gdyby model oszukal z outputem i oprocz samego kodu json zwrocil tez jakies swoje mysli
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        json_match = re.search(r"\[.*\]", content, re.DOTALL)
         if json_match:
             # konwersja z json na slownik
             event_data = json.loads(json_match.group(0))
-            # sprawdzenie czy spoktanie zawiera dane o rozpoczeciu
-            if "start_time" in event_data or "start_date" in event_data:
-                return event_data
+
+            if isinstance(event_data, list):
+                valid_events = []
+                for event in event_data:
+                    # sprawdzenie czy spoktanie zawiera dane o rozpoczeciu
+                    if "start_time" in event or "start_date" in event:
+                        valid_events.append(event)
+
+                return valid_events if valid_events else None
+
         return None
+
     except Exception as e:
         print(f"Błąd ekstraktowania danych o spotkaniu w formacie JSON: {e}")
         return None
