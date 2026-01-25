@@ -6,6 +6,10 @@ WORKDIR /app
 
 # Kopiowanie listy bibliotek i instalacja
 COPY requirements.txt .
+
+# torch sama wersja cpu bez nvidi bo i tak niepotrzebna a troche wazy
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Kopiowanie kodu aplikacji

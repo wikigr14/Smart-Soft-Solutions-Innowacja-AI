@@ -33,7 +33,7 @@ class TranscriptResponse(TranscriptCreate):
     filename: str
     created_at: datetime
     summary: Optional[str] = None
-    calendar_events: Optional[Dict[str, Any]] = None  # json z evenetem
+    calendar_events: Optional[List[Dict[str, Any]]] = None  # json z evenetem
 
     class Config:
         from_attributes = True
@@ -91,7 +91,9 @@ def register(user: UserCreate, db: Session = Depends(database.get_db)):
     # sprawdza czy email juz istnieje w bazie
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Użytkownik o podanym adresie Email już istnieje")
+        raise HTTPException(
+            status_code=400, detail="Użytkownik o podanym adresie Email już istnieje"
+        )
     # hasuje haslo i przypisuje do usera potem pcha do bazy
     hashed_pwd = auth.get_password_hash(user.password)
     new_user = models.User(email=user.email, hashed_password=hashed_pwd)
@@ -103,7 +105,10 @@ def register(user: UserCreate, db: Session = Depends(database.get_db)):
 
 
 @app.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(database.get_db),
+):
     # sprawdza czy user istnieje i jego dane sa zgodne z podanymi w formularzu, jesli tak to loguje uzytkownika
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
@@ -117,7 +122,7 @@ def read_user_me(current_user: models.User = Depends(auth.get_current_user)):
     # zwraca info o zalogowanym userze (email, i czy konto google jest podpiete) przez token
     return {
         "email": current_user.email,
-        "is_google_connected": current_user.google_credentials is not None
+        "is_google_connected": current_user.google_credentials is not None,
     }
 
 
@@ -157,8 +162,11 @@ def process_ai_chunks(transcript_id, full_text, db):
 # ENDPOINTY
 # zapisanie danych
 @app.post("/transcripts/", response_model=TranscriptResponse)
-def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get_db),
-                      current_user: models.User = Depends(auth.get_current_user)):
+def create_transcript(
+    item: TranscriptCreate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
     # tworzony wpis transkrypcji w bazie
     db_transcript = models.Transcript(
         filename=item.filename, full_text=item.full_text, user_id=current_user.id
@@ -177,8 +185,10 @@ def create_transcript(item: TranscriptCreate, db: Session = Depends(database.get
 
 # odczyt danych
 @app.get("/transcripts/", response_model=List[TranscriptResponse])
-def read_transcripts(db: Session = Depends(database.get_db),
-                     current_user: models.User = Depends(auth.get_current_user)):
+def read_transcripts(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
     # zwraca liste transkrypcji nalezacych do danego uzytkownika
     return current_user.transcripts
 
@@ -191,7 +201,11 @@ def process_transcript_full(transcript_id, full_text, db: Session):
     summary_text = ai_service.generate_summary(full_text)
     # test google calendar
     meeting_data = ai_service.extract_event_json(full_text)
-    db_transcript = db.query(models.Transcript).filter(models.Transcript.id == transcript_id).first()
+    db_transcript = (
+        db.query(models.Transcript)
+        .filter(models.Transcript.id == transcript_id)
+        .first()
+    )
     if db_transcript:
         db_transcript.summary = summary_text
         if meeting_data:
@@ -203,8 +217,9 @@ def process_transcript_full(transcript_id, full_text, db: Session):
 # upload pliku txt
 @app.post("/upload/", response_model=TranscriptResponse)
 async def upload_text_file(
-        file: UploadFile = File(...), db: Session = Depends(database.get_db),
-        current_user: models.User = Depends(auth.get_current_user)
+    file: UploadFile = File(...),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
 ):
     try:
         # Odczytywanie treści pliku txt
@@ -241,17 +256,20 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
     query = db.query(models.TranscriptChunk)
 
     if request.transcript_id:
-        query = query.filter(models.TranscriptChunk.transcript_id == request.transcript_id)
+        query = query.filter(
+            models.TranscriptChunk.transcript_id == request.transcript_id
+        )
 
     # Szukanie najwiekszego podobienstwa
-    best_chunks = query.order_by(
-        models.TranscriptChunk.embedding.cosine_distance(query_vector)
-    ).limit(3).all()
+    best_chunks = (
+        query.order_by(models.TranscriptChunk.embedding.cosine_distance(query_vector))
+        .limit(6)
+        .all()
+    )
 
     if not best_chunks:
         return ChatResponse(
-            answer="Brak pasujących informacji w bazie.",
-            context_chunks=[]
+            answer="Brak pasujących informacji w bazie.", context_chunks=[]
         )
 
     # Wyciąganie tekstu
@@ -259,7 +277,7 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
 
     return ChatResponse(
         answer=f"Znalazlem {len(context_texts)} pasujace fragmenty.",
-        context_chunks=context_texts
+        context_chunks=context_texts,
     )
 
 
@@ -277,8 +295,11 @@ def auth_callback(code: str, db: Session = Depends(database.get_db)):
 
 
 @app.post("/auth/google/connect")
-def connect_google_account(body: dict, db: Session = Depends(database.get_db),
-                           current_user: models.User = Depends(auth.get_current_user)):
+def connect_google_account(
+    body: dict,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
     # zmienia kod na tokeny i zapisuje w bazie
     code = body.get("code")
     cred = google_service.get_credentials(code)
@@ -288,22 +309,50 @@ def connect_google_account(body: dict, db: Session = Depends(database.get_db),
 
 
 @app.post("/transcripts/{transcript_id}/create_event")
-def create_event_in_google(transcript_id: int, db: Session = Depends(database.get_db),
-                           current_user: models.User = Depends(auth.get_current_user)):
+def create_event_in_google(
+    transcript_id: int,
+    event_index: int = 0,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
     # pobiera transkrypcje i sprawdza czy zawiera w sobie wydarzenie
-    transcript = db.query(models.Transcript).filter(models.Transcript.id == transcript_id,
-                                                    models.Transcript.user_id == current_user.id).first()
+    transcript = (
+        db.query(models.Transcript)
+        .filter(
+            models.Transcript.id == transcript_id,
+            models.Transcript.user_id == current_user.id,
+        )
+        .first()
+    )
     if not transcript or not transcript.calendar_events:
         raise HTTPException(status_code=404, detail="Nie wykryto spotkania do dodania")
+
+    # czy to lista?
+    events_list = transcript.calendar_events
+    if not isinstance(events_list, list):
+        # dla starych wpisow jesli kiedys cos istnieje jako pojedynczy obiekt
+        events_list = [events_list]
+
+    if event_index < 0 or event_index >= len(events_list):
+        raise HTTPException(status_code=404, detail="Nieprawidlowy indeks spotkania.")
+
+    # konkretne spotkanie z listy
+    selected_event = events_list[event_index]
+
     # sprawdzenie czy konto google polaczone z kontem uzytkownika
     if not current_user.google_credentials:
         raise HTTPException(status_code=400, detail="Nie połączono z kontem Google")
     # wywolanie uslugi tworzenia kalendarza
-    cred = json.loads(current_user.google_credentials) if isinstance(current_user.google_credentials,
-                                                                     str) else current_user.google_credentials
-    link = google_service.create_calendar_event(cred, transcript.calendar_events)
+    cred = (
+        json.loads(current_user.google_credentials)
+        if isinstance(current_user.google_credentials, str)
+        else current_user.google_credentials
+    )
+    link = google_service.create_calendar_event(cred, selected_event)
     # zwraca link do wydarzenia
     if link:
         return {"link": link}
     else:
-        raise HTTPException(status_code=500, detail="Błąd działania Google Calendar API")
+        raise HTTPException(
+            status_code=500, detail="Błąd działania Google Calendar API"
+        )
