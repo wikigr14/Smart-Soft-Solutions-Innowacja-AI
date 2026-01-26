@@ -16,6 +16,31 @@ function App() {
     const [appStatus, setAppStatus] = useState("")         // Komunikaty dla usera
     const [transcriptResult, setTranscriptResult] = useState(null) //wyniki transkrypcji
 
+
+    const [history, setHistory] = useState([]) //historia
+    const [notification, setNotification] = useState(null) //komunikaty
+
+    //wyświetlanie powiadomień zamiast alertów
+    const showNotification = (message, type = 'error') => {
+        setNotification({ message, type })
+        setTimeout(() => {
+            setNotification(null)
+        }, 5000)
+    }
+
+    //komponenty banera
+    const NotificationBanner = () => {
+        if (!notification) return null;
+        const isSuccess = notification.type === 'success';
+        const style = {
+            padding: '15px', marginBottom: '20px', borderRadius: '8px', textAlign: 'center', fontWeight: '600',
+            backgroundColor: isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+            color: isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+            border: `1px solid ${isSuccess ? '#a7f3d0' : '#fecaca'}`, animation: 'fadeIn 0.3s ease'
+        };
+        return <div style={style}>{notification.message}</div>
+    }
+
     //sprawdzanie logowania z google
     useEffect(() => {
         //odpalana przy wlaczeniu strony
@@ -27,6 +52,7 @@ function App() {
             connectGoogleAccount(googleCode)
         } else if (token) {
             fetchUserData()
+            fetchHistory()
         }
     }, [token])
 
@@ -49,6 +75,47 @@ function App() {
         }
     }
 
+    //funkcja pobierania historii
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch(`${API_URL}/transcripts`, {
+                headers: {"Authorization": `Bearer ${token}`}
+            })
+            if (res.ok) {
+                const data = await res.json()
+                const sorted = Array.isArray(data) ? data.reverse() : [] 
+                setHistory(sorted)
+            }
+        } catch (e) {
+            console.error("Błąd pobierania historii:", e)
+        }
+    }
+
+    //funkcja usuwania
+    const handleDelete = async (id, e) => {
+        if(e) e.stopPropagation() 
+        if (!window.confirm("Czy na pewno chcesz usunąć ten zapis?")) return
+
+        try {
+            const res = await fetch(`${API_URL}/transcripts/${id}`, {
+                method: "DELETE",
+                headers: {"Authorization": `Bearer ${token}`}
+            })
+            if (res.ok) {
+                showNotification("Usunięto pomyślnie", "success")
+                fetchHistory() 
+                if (transcriptResult?.id === id) {
+                    setTranscriptResult(null) 
+                }
+            } else {
+                showNotification("Nie udało się usunąć", "error")
+            }
+        } catch (e) {
+            console.error(e)
+            showNotification("Błąd połączenia", "error")
+        }
+    }
+
     //laczenie z kontem google
     const connectGoogleAccount = async (code) => {
         //kod autoryzacyjny google wysylany do backendu w celu zamiany na tokeny
@@ -62,7 +129,7 @@ function App() {
                 body: JSON.stringify({code})
             })
             if (res.ok) {
-                alert("Pomyślnie połączono konto Google.")
+                showNotification("Pomyślnie połączono konto Google.", "success") // 🔄 ZMIANA Z ALERT
                 //czysczenie linku
                 window.history.replaceState({}, document.title, "/")
                 //odswiezanie danych usera
@@ -70,7 +137,7 @@ function App() {
             }
         } catch (e) {
             console.error(e)
-            alert("Błąd podczas łączenia z kontem Google.")
+            showNotification("Błąd podczas łączenia z kontem Google.", "error") // 🔄 ZMIANA Z ALERT
         }
     }
 
@@ -80,13 +147,15 @@ function App() {
         setToken(null)
         setUser(null)
         setTranscriptResult(null)
+        setHistory([])
+        setNotification(null) 
     }
 
     //obsluga logowania i rejestracji
-
     const handleAuth = async (e) => {
         //obsluga formularza logowania lub rejestracji
         e.preventDefault()
+        setNotification(null) 
         const endpoint = authMode === "login" ? "/token" : "/register"
 
         let body, headers = {}
@@ -116,14 +185,14 @@ function App() {
                 setToken(data.access_token)
                 //po rejestracji automatycznie nastepuje logowanie
                 if (authMode === "register") {
-                    alert("Konto utworzone.")
+                    showNotification("Konto utworzone pomyślnie.", "success") // 🔄 ZMIANA Z ALERT
                 }
             } else {
-                alert(`Błąd: ${data.detail}`)
+                showNotification(`Błąd: ${data.detail}`, "error") // 🔄 ZMIANA Z ALERT
             }
         } catch (err) {
             console.error(err)
-            alert("Błąd połaczenia z serwerem")
+            showNotification("Błąd połączenia z serwerem", "error") // 🔄 ZMIANA Z ALERT
         }
     }
 
@@ -138,31 +207,41 @@ function App() {
             window.location.href = data.url
         } catch (e) {
             console.error(e)
-            alert("Nie udało się przełączyć na stronę logowanie Google")
+            showNotification("Nie udało się przełączyć na stronę logowania Google", "error") // 🔄 ZMIANA Z ALERT
         }
     }
 
-    const addToCalendar = async () => {
+    //addToCalendar przyjmuje teraz eventData (przygotowanie pod tabelę)
+    const addToCalendar = async (eventData) => {
         //wysyla zadanie utworzenia wydarzenia w kalendarzu
-        if (!transcriptResult || !transcriptResult.id) {
+        
+        //jeśli eventData jest puste (stary przycisk), bierzemy z głównego wyniku
+        const targetEvent = eventData || transcriptResult.calendar_events;
+
+        if (!transcriptResult || !transcriptResult.id || !targetEvent) {
             return;
         }
         try {
             const res = await fetch(`${API_URL}/transcripts/${transcriptResult.id}/create_event`, {
                 method: "POST",
-                headers: {"Authorization": `Bearer ${token}`}
+                headers: {
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${token}`
+                },
+                //wysyłamy konkretny obiekt w body
+                body: JSON.stringify(targetEvent)
             })
             const data = await res.json()
             if (res.ok) {
-                alert("Dodano wydarzenie")
+                showNotification("Dodano wydarzenie", "success") // 🔄 ZMIANA Z ALERT
                 // jesli da sie dodac wydarzenie to otwieramy kalendarz w nowej karcie
-                window.open(data.link, '_blank')
+                if(data.link) window.open(data.link, '_blank')
             } else {
-                alert("Wystąpił błąd podczas dodawania wydarzenia")
+                showNotification(`Błąd: ${data.detail}`, "error") // 🔄 ZMIANA Z ALERT
             }
         } catch (e) {
             console.error(e)
-            alert("Błąd połączenia")
+            showNotification("Błąd połączenia", "error") // 🔄 ZMIANA Z ALERT
         }
     }
 
@@ -181,6 +260,7 @@ function App() {
         }
 
         setAppStatus("Wysyłanie...")
+        setNotification(null) // czyszczenie błędów
 
         const formData = new FormData()
         formData.append("file", selectedFile)
@@ -200,6 +280,7 @@ function App() {
                 setSelectedFile(null)
                 // Czyszczenie inputu
                 document.querySelector('input[type="file"]').value = ""
+                fetchHistory() //odśwież historię po uploadzie
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 setAppStatus(`Błąd serwera (${response.status}): ${errorData.detail || response.statusText}`);
@@ -245,8 +326,11 @@ function App() {
         return (
             <div className="container app-root-container">
                 <h1>AI Transcriber</h1>
-                <div className="card">
+                <div className="card" style={{maxWidth: '400px', margin: '0 auto', width: '100%'}}>
                     <h2>{authMode === "login" ? "Logowanie" : "Rejestracja"}</h2>
+                    
+                    <NotificationBanner /> {/*dodany baner */}
+
                     <form onSubmit={handleAuth} style={{display: 'flex', flexDirection: 'column'}}>
                         <input type="email" placeholder="test@gmail.com" value={email}
                                onChange={(e) => setEmail(e.target.value)} required/>
@@ -258,7 +342,10 @@ function App() {
                     </form>
                     <p>
                         {authMode === "login" ? "Nie masz konta?" : "Masz już konto?"}
-                        <span onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>
+                        <span onClick={() => {
+                            setAuthMode(authMode === "login" ? "register" : "login")
+                            setNotification(null)
+                        }}>
                             {authMode === "login" ? "Zarejestruj się" : "Zaloguj się"}
                         </span>
                     </p>
@@ -277,6 +364,9 @@ function App() {
                     <button onClick={logout}>Wyloguj</button>
                 </div>
             </header>
+            
+            <NotificationBanner /> {/*dodany baner */}
+
             {/*sekcja na status polaczenia z google*/}
             {user && !user.is_google_connected && (
                 <div className="card">
@@ -301,7 +391,7 @@ function App() {
             {/* sekcja na wyswietlenie podsumowania i spoktania*/}
             {transcriptResult && (
                 <div>
-                    {/* sekcja na wyswietlenie spotkan*/}
+                    {/* sekcja na wyswietlenie spotkan */}
                     {transcriptResult.calendar_events && (
                         <div className="card">
                             <h3>Wykryto spotkanie</h3>
@@ -310,7 +400,8 @@ function App() {
                                 <p>Data: {formatEventDate(transcriptResult.calendar_events)}</p>
                             </div>
                             {user?.is_google_connected ? (
-                                <button onClick={addToCalendar}>Dodaj spotkanie do kalendarza Google</button>
+                                //przekazujemy null, funkcja weźmie domyślny event
+                                <button onClick={() => addToCalendar(null)}>Dodaj spotkanie do kalendarza Google</button>
                             ) : (
                                 <p>Połącz swoje konto z kontem Google by móc dodać wydarzenie do swojego kalendarza.</p>
                             )}
@@ -318,7 +409,6 @@ function App() {
                     )}
                     {/* sekcja na wyswietlenie podsumowania*/}
                     <div className="card" style={{marginTop: '20px', textAlign: 'left'}}>
-                        {}
                         <h3>Wynik podsumowania:</h3>
                         <p><strong>Plik:</strong>{transcriptResult.filename}</p>
                         <div style={{backgroundColor: "#f0f0f0", padding: '15px', borderRadius: '8px'}}>
@@ -329,8 +419,7 @@ function App() {
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
         </div>
     )
 }
