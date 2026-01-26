@@ -16,7 +16,7 @@ function App() {
     const [appStatus, setAppStatus] = useState("")         // Komunikaty dla usera
     const [transcriptResult, setTranscriptResult] = useState(null) //wyniki transkrypcji
 
-
+    // Historia i Powiadomienia
     const [history, setHistory] = useState([]) //historia
     const [notification, setNotification] = useState(null) //komunikaty
 
@@ -52,7 +52,7 @@ function App() {
             connectGoogleAccount(googleCode)
         } else if (token) {
             fetchUserData()
-            fetchHistory()
+            fetchHistory() // pobieranie historii
         }
     }, [token])
 
@@ -75,7 +75,7 @@ function App() {
         }
     }
 
-    //funkcja pobierania historii
+    // Funkcja pobierania historii
     const fetchHistory = async () => {
         try {
             const res = await fetch(`${API_URL}/transcripts`, {
@@ -91,9 +91,9 @@ function App() {
         }
     }
 
-    //funkcja usuwania
+    // Funkcja usuwania
     const handleDelete = async (id, e) => {
-        if(e) e.stopPropagation() 
+        e.stopPropagation() 
         if (!window.confirm("Czy na pewno chcesz usunąć ten zapis?")) return
 
         try {
@@ -129,7 +129,7 @@ function App() {
                 body: JSON.stringify({code})
             })
             if (res.ok) {
-                showNotification("Pomyślnie połączono konto Google.", "success") // 🔄 ZMIANA Z ALERT
+                showNotification("Pomyślnie połączono konto Google.", "success")
                 //czysczenie linku
                 window.history.replaceState({}, document.title, "/")
                 //odswiezanie danych usera
@@ -137,7 +137,7 @@ function App() {
             }
         } catch (e) {
             console.error(e)
-            showNotification("Błąd podczas łączenia z kontem Google.", "error") // 🔄 ZMIANA Z ALERT
+            showNotification("Błąd podczas łączenia z kontem Google.", "error")
         }
     }
 
@@ -185,14 +185,14 @@ function App() {
                 setToken(data.access_token)
                 //po rejestracji automatycznie nastepuje logowanie
                 if (authMode === "register") {
-                    showNotification("Konto utworzone pomyślnie.", "success") // 🔄 ZMIANA Z ALERT
+                    showNotification("Konto utworzone pomyślnie.", "success")
                 }
             } else {
-                showNotification(`Błąd: ${data.detail}`, "error") // 🔄 ZMIANA Z ALERT
+                showNotification(`Błąd: ${data.detail}`, "error")
             }
         } catch (err) {
             console.error(err)
-            showNotification("Błąd połączenia z serwerem", "error") // 🔄 ZMIANA Z ALERT
+            showNotification("Błąd połączenia z serwerem", "error")
         }
     }
 
@@ -207,15 +207,13 @@ function App() {
             window.location.href = data.url
         } catch (e) {
             console.error(e)
-            showNotification("Nie udało się przełączyć na stronę logowania Google", "error") // 🔄 ZMIANA Z ALERT
+            showNotification("Nie udało się przełączyć na stronę logowania Google", "error")
         }
     }
 
-    //addToCalendar przyjmuje teraz eventData (przygotowanie pod tabelę)
+    // Obsługa konkretnego eventu
     const addToCalendar = async (eventData) => {
         //wysyla zadanie utworzenia wydarzenia w kalendarzu
-        
-        //jeśli eventData jest puste (stary przycisk), bierzemy z głównego wyniku
         const targetEvent = eventData || transcriptResult.calendar_events;
 
         if (!transcriptResult || !transcriptResult.id || !targetEvent) {
@@ -228,20 +226,20 @@ function App() {
                     "Content-Type": "application/json", 
                     "Authorization": `Bearer ${token}`
                 },
-                //wysyłamy konkretny obiekt w body
+                // Wysyłamy konkretny obiekt w body
                 body: JSON.stringify(targetEvent)
             })
             const data = await res.json()
             if (res.ok) {
-                showNotification("Dodano wydarzenie", "success") // 🔄 ZMIANA Z ALERT
+                showNotification("Dodano wydarzenie do kalendarza", "success")
                 // jesli da sie dodac wydarzenie to otwieramy kalendarz w nowej karcie
                 if(data.link) window.open(data.link, '_blank')
             } else {
-                showNotification(`Błąd: ${data.detail}`, "error") // 🔄 ZMIANA Z ALERT
+                showNotification(`Błąd: ${data.detail || "Nie udało się dodać wydarzenia"}`, "error")
             }
         } catch (e) {
             console.error(e)
-            showNotification("Błąd połączenia", "error") // 🔄 ZMIANA Z ALERT
+            showNotification("Błąd połączenia", "error")
         }
     }
 
@@ -249,7 +247,6 @@ function App() {
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0])
         setAppStatus("")
-        setTranscriptResult(null)
     }
 
     // Wykonuje upload pliku
@@ -276,18 +273,18 @@ function App() {
             if (response.ok) {
                 const data = await response.json()
                 setTranscriptResult(data)//zapis odpowiedzi z backendu
-                setAppStatus("Plik zapisany w bazie!")
+                setAppStatus("Plik przetworzony pomyślnie!")
                 setSelectedFile(null)
                 // Czyszczenie inputu
                 document.querySelector('input[type="file"]').value = ""
-                fetchHistory() //odśwież historię po uploadzie
+                fetchHistory() // Odśwież historię po uploadzie
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 setAppStatus(`Błąd serwera (${response.status}): ${errorData.detail || response.statusText}`);
             }
         } catch (error) {
             console.error("Błąd połączenia:", error)
-            setAppStatus(`Błąd połączenia (Sprawdź, czy backend działa na ${API_URL})`)
+            setAppStatus(`Błąd połączenia z backendem`)
         }
     }
 
@@ -324,23 +321,26 @@ function App() {
     //logowanie/rejestracja
     if (!token) {
         return (
-            <div className="container app-root-container">
+            <div className="app-root-container" style={{justifyContent: 'center', minHeight: '80vh'}}>
                 <h1>AI Transcriber</h1>
                 <div className="card" style={{maxWidth: '400px', margin: '0 auto', width: '100%'}}>
-                    <h2>{authMode === "login" ? "Logowanie" : "Rejestracja"}</h2>
+                    <h2>{authMode === "login" ? "Witaj ponownie" : "Utwórz konto"}</h2>
+                    <p className="subtitle" style={{marginBottom: '20px'}}>
+                        {authMode === "login" ? "Zaloguj się, aby kontynuować" : "Zarejestruj się, aby korzystać z aplikacji"}
+                    </p>
                     
-                    <NotificationBanner /> {/*dodany baner */}
+                    <NotificationBanner />
 
-                    <form onSubmit={handleAuth} style={{display: 'flex', flexDirection: 'column'}}>
-                        <input type="email" placeholder="test@gmail.com" value={email}
+                    <form onSubmit={handleAuth} style={{display: 'flex', flexDirection: 'column', width: '100%'}}>
+                        <input type="email" placeholder="Adres e-mail" value={email}
                                onChange={(e) => setEmail(e.target.value)} required/>
-                        <input type="password" placeholder="******" value={password}
+                        <input type="password" placeholder="Hasło" value={password}
                                onChange={(e) => setPassword(e.target.value)} required/>
-                        <button type="submit">
+                        <button type="submit" style={{marginTop: '10px'}}>
                             {authMode === "login" ? "Zaloguj się" : "Zarejestruj się"}
                         </button>
                     </form>
-                    <p>
+                    <p style={{marginTop: '20px', fontSize: '0.9rem'}}>
                         {authMode === "login" ? "Nie masz konta?" : "Masz już konto?"}
                         <span onClick={() => {
                             setAuthMode(authMode === "login" ? "register" : "login")
@@ -356,70 +356,185 @@ function App() {
 
     //glowna apka po logowaniu
     return (
-        <div className="container app-root-container">
+        <div className="app-root-container">
             <header>
                 <h1>AI Transcriber</h1>
                 <div>
-                    <div>Zalogowany jako: {user?.email}</div>
-                    <button onClick={logout}>Wyloguj</button>
+                    <div>{user?.email}</div>
+                    <button onClick={logout} style={{backgroundColor: 'white', color: '#374151', border: '1px solid #d1d5db', padding: '8px 16px'}}>
+                        Wyloguj
+                    </button>
                 </div>
             </header>
             
-            <NotificationBanner /> {/*dodany baner */}
+            <NotificationBanner />
 
-            {/*sekcja na status polaczenia z google*/}
+            {/*Status Google*/}
             {user && !user.is_google_connected && (
-                <div className="card">
-                    <p>Brak połączenia z Google</p>
-                    <button onClick={handleGoogleLinkClick}>Połącz z Google</button>
+                <div className="card" style={{borderLeft: '4px solid #f59e0b'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '10px'}}>
+                        <div>
+                            <h3 style={{border: 'none', padding: 0, margin: 0}}>Integracja z Google</h3>
+                            <p style={{margin: '5px 0 0 0', color: '#6b7280'}}>Połącz konto, aby automatycznie dodawać wydarzenia do kalendarza.</p>
+                        </div>
+                        <button onClick={handleGoogleLinkClick}>Połącz z Google</button>
+                    </div>
                 </div>
             )}
-            {/*sekcja na upload pliku*/}
-            <p className="subtitle">Wgraj przykładowy plik tekstowy (.txt), aby symulować transkrypcję.</p>
+
+            {/*Upload*/}
             <div className="card">
+                <h3>Nowa transkrypcja</h3>
+                <p className="subtitle" style={{textAlign: 'left', width: '100%'}}>
+                    Wgraj plik tekstowy (.txt), aby AI wygenerowało podsumowanie i wykryło wydarzenia.
+                </p>
                 <input
                     type="file"
                     accept=".txt"
                     onChange={handleFileChange}
                 />
-                <br/>
-                <button onClick={handleUpload} disabled={!selectedFile}>
-                    Wyślij i generuj podsumowanie
-                </button>
-                <p className="status">{appStatus}</p>
+                
+                <div style={{display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: '10px', alignItems: 'center', gap: '15px'}}>
+                    <span className="status">{appStatus}</span>
+                    <button onClick={handleUpload} disabled={!selectedFile}>
+                        Generuj podsumowanie
+                    </button>
+                </div>
             </div>
-            {/* sekcja na wyswietlenie podsumowania i spoktania*/}
+
+            {/*wynik transkrypcji*/}
             {transcriptResult && (
-                <div>
-                    {/* sekcja na wyswietlenie spotkan */}
+                <div style={{display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.5s'}}>
+                    
+                    {/*sekcja spotkań*/}
                     {transcriptResult.calendar_events && (
-                        <div className="card">
-                            <h3>Wykryto spotkanie</h3>
-                            <div>
-                                <p>Temat: {transcriptResult.calendar_events.summary}</p>
-                                <p>Data: {formatEventDate(transcriptResult.calendar_events)}</p>
+                        <div className="meetings-section">
+                            <h3 style={{marginBottom: '15px', color: '#374151', textAlign: 'left'}}>
+                                Znalezione spotkania
+                            </h3>
+                            
+                            {/*nagłówek tabeli*/}
+                            <div className="meetings-header">
+                                <div style={{flex: 1}}>(D)ATA</div>
+                                <div style={{flex: 1, paddingLeft: '15px'}}>(T)EMAT</div>
+                                <div style={{flex: 1, textAlign: 'right'}}>(P)RZYCISK</div>
                             </div>
-                            {user?.is_google_connected ? (
-                                //przekazujemy null, funkcja weźmie domyślny event
-                                <button onClick={() => addToCalendar(null)}>Dodaj spotkanie do kalendarza Google</button>
-                            ) : (
-                                <p>Połącz swoje konto z kontem Google by móc dodać wydarzenie do swojego kalendarza.</p>
-                            )}
+
+                            {/*lista spotkań*/}
+                            <div className="meetings-list">
+                                {/*mapowanie niezależnie czy to tablica czy pojedynczy obiekt*/}
+                                {(Array.isArray(transcriptResult.calendar_events) 
+                                    ? transcriptResult.calendar_events 
+                                    : [transcriptResult.calendar_events]
+                                ).map((evt, index) => (
+                                    <div className="meeting-row" key={index}>
+                                        {/*data*/}
+                                        <div className="col-date">
+                                            {formatEventDate(evt)}
+                                        </div>
+
+                                        {/*temat*/}
+                                        <div className="col-topic">
+                                            {evt.summary || "Brak tematu"}
+                                        </div>
+
+                                        {/*przycisk*/}
+                                        <div className="col-action">
+                                            {user?.is_google_connected ? (
+                                                <button 
+                                                    onClick={() => addToCalendar(evt)} 
+                                                    className="btn-accept"
+                                                >
+                                                    Dodaj do kalendarza
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    onClick={handleGoogleLinkClick}
+                                                    style={{backgroundColor: '#f59e0b', color: 'white', fontSize: '0.85rem', padding: '8px 12px'}}
+                                                >
+                                                    Połącz z Google
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
-                    {/* sekcja na wyswietlenie podsumowania*/}
-                    <div className="card" style={{marginTop: '20px', textAlign: 'left'}}>
-                        <h3>Wynik podsumowania:</h3>
-                        <p><strong>Plik:</strong>{transcriptResult.filename}</p>
-                        <div style={{backgroundColor: "#f0f0f0", padding: '15px', borderRadius: '8px'}}>
-                            <h4>Podsumowanie wygenerowane przez AI:</h4>
-                            <div style={{whiteSpace: 'pre-wrap'}}>
-                                {transcriptResult.summary || "Nie wygenerowano podsumowania"}
-                            </div>
+
+                    {/* Podsumowanie */}
+                    <div className="card">
+                        <h3>Podsumowanie: {transcriptResult.filename}</h3>
+                        <div className="summary-box">
+                            {transcriptResult.summary || "Nie wygenerowano podsumowania"}
                         </div>
+                        <button 
+                            className="btn-small btn-view" 
+                            style={{marginTop: '15px', alignSelf: 'flex-start'}}
+                            onClick={() => setTranscriptResult(null)}
+                        >
+                            Zamknij podgląd
+                        </button>
                     </div>
                 </div>
             )}
+
+            {/* Historia Transkrypcji */}
+            <div className="card">
+                <h3>Historia transkrypcji</h3>
+                {history.length === 0 ? (
+                    <p className="subtitle">Brak historii transkrypcji.</p>
+                ) : (
+                    <div className="table-container">
+                        <table className="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Plik</th>
+                                    <th>Wykryte wydarzenie</th>
+                                    <th style={{textAlign: 'right'}}>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {history.map((item) => (
+                                    <tr key={item.id}>
+                                        <td>{item.filename || `Transkrypcja #${item.id}`}</td>
+                                        <td>
+                                            {item.calendar_events ? (
+                                                <span style={{color: '#059669', fontWeight: '500'}}>
+                                                    {Array.isArray(item.calendar_events) 
+                                                        ? `Znaleziono: ${item.calendar_events.length}` 
+                                                        : item.calendar_events.summary}
+                                                </span>
+                                            ) : (
+                                                <span style={{color: '#9ca3af'}}>Brak wydarzeń</span>
+                                            )}
+                                        </td>
+                                        <td style={{textAlign: 'right'}}>
+                                            <div className="action-buttons" style={{justifyContent: 'flex-end'}}>
+                                                <button 
+                                                    className="btn-small btn-view" 
+                                                    onClick={() => {
+                                                        setTranscriptResult(item)
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                                                    }}
+                                                >
+                                                    Pokaż
+                                                </button>
+                                                <button 
+                                                    className="btn-small btn-delete" 
+                                                    onClick={(e) => handleDelete(item.id, e)}
+                                                >
+                                                    Usuń
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
