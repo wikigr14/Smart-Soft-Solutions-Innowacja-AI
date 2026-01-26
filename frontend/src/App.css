@@ -41,7 +41,6 @@ header div {
   color: var(--text-muted);
 }
 
-/* --- Karty (Cards) --- */
 .card {
   background-color: var(--card-bg);
   padding: 40px;
@@ -327,7 +326,7 @@ p span:hover {
 }
 
 .col-action {
-  flex: 1; /* 34s% */
+  flex: 1; /* 34% */
   padding-left: 15px;
   display: flex;
   justify-content: flex-end;
