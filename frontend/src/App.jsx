@@ -415,9 +415,9 @@ function App() {
                             
                             {/*nagłówek tabeli*/}
                             <div className="meetings-header">
-                                <div style={{flex: 1}}>(D)ATA</div>
-                                <div style={{flex: 1, paddingLeft: '15px'}}>(T)EMAT</div>
-                                <div style={{flex: 1, textAlign: 'right'}}>(P)RZYCISK</div>
+                                <div style={{flex: 1}}>DATA</div>
+                                <div style={{flex: 1, paddingLeft: '15px'}}>TEMAT</div>
+                                <div style={{flex: 1, textAlign: 'right'}}>DODAJ DO KALENDZRZA</div>
                             </div>
 
                             {/*lista spotkań*/}
