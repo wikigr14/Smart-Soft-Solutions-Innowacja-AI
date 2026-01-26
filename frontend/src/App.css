@@ -29,7 +29,7 @@ header {
 header h1 {
   font-size: 1.5rem;
   background: linear-gradient(135deg, #4f46e5, #9333ea);
-  -webkit-clip: text;
+  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -41,6 +41,7 @@ header div {
   color: var(--text-muted);
 }
 
+/* --- Karty (Cards) --- */
 .card {
   background-color: var(--card-bg);
   padding: 40px;
@@ -93,6 +94,7 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+
 input[type="file"] {
   border: 2px dashed var(--border-color);
   background-color: #f9fafb;
@@ -109,6 +111,7 @@ input[type="file"]:hover {
   border-color: var(--primary-color);
   background-color: #eff6ff;
 }
+
 
 button {
   background-color: var(--primary-color);
@@ -150,6 +153,7 @@ p span {
 p span:hover {
   text-decoration: underline;
 }
+
 
 .status {
   margin-top: 10px;
@@ -323,11 +327,12 @@ p span:hover {
 }
 
 .col-action {
-  flex: 1; /* 34%*/
+  flex: 1; /* 34s% */
   padding-left: 15px;
   display: flex;
   justify-content: flex-end;
 }
+
 
 .btn-accept {
   background-color: #10b981;
@@ -346,6 +351,7 @@ p span:hover {
 .btn-accept:hover {
   background-color: #059669;
 }
+
 
 @media (max-width: 768px) {
     .meetings-header {
