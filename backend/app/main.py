@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from . import models, database, ai_service, google_service, auth
 from datetime import datetime
@@ -37,6 +37,13 @@ class TranscriptResponse(TranscriptCreate):
 
     class Config:
         from_attributes = True
+    
+    @field_validator('calendar_events', mode='before')
+    @classmethod
+    def parse_calendar_events(cls, v):
+        if isinstance(v, dict):
+            return [v]
+        return v
 
 
 # Schematy dla RAG
