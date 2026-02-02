@@ -1,6 +1,15 @@
 import {useState, useEffect} from 'react'
 import './App.css'
 
+// Import komponentów
+import AuthForm from './components/AuthForm';
+import Header from './components/Header';
+import NotificationBanner from './components/NotificationBanner';
+import GoogleConnect from './components/GoogleConnect';
+import FileUpload from './components/FileUpload';
+import TranscriptResult from './components/TranscriptResult';
+import HistoryList from './components/HistoryList';
+
 const API_URL = "http://localhost:8000"
 
 // Główny komponent
@@ -14,6 +23,7 @@ function App() {
     const [authMode, setAuthMode] = useState("login")//formularz w trybie login lub register
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    
     //Aplikacja
     const [selectedFile, setSelectedFile] = useState(null) // Plik do wysłania
     const [appStatus, setAppStatus] = useState("")         // Komunikaty dla usera
@@ -28,31 +38,6 @@ function App() {
         document.documentElement.setAttribute('data-theme', theme)
         localStorage.setItem("theme", theme)
     }, [theme])
-
-    const toggleTheme = () => {
-        setTheme((prev) => (prev === "light" ? "dark" : "light"))
-    }
-
-    //wyświetlanie powiadomień zamiast alertów
-    const showNotification = (message, type = 'error') => {
-        setNotification({ message, type })
-        setTimeout(() => {
-            setNotification(null)
-        }, 5000)
-    }
-
-    //komponenty banera
-    const NotificationBanner = () => {
-        if (!notification) return null;
-        const isSuccess = notification.type === 'success';
-        const style = {
-            padding: '15px', marginBottom: '20px', borderRadius: '8px', textAlign: 'center', fontWeight: '600',
-            backgroundColor: isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
-            color: isSuccess ? 'var(--success-text)' : 'var(--error-text)',
-            border: `1px solid ${isSuccess ? 'var(--sucess-border)' : 'var(--error-border'}`, animation: 'fadeIn 0.3s ease'
-        };
-        return <div style={style}>{notification.message}</div>
-    }
 
     //sprawdzanie logowania z google
     useEffect(() => {
@@ -69,88 +54,13 @@ function App() {
         }
     }, [token])
 
-    //pobieranie danych usera
-    const fetchUserData = async () => {
-        //pobiera dane profilu z backendu
-        try {
-            const res = await fetch(`${API_URL}/users/me`, {
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-            if (res.ok) {
-                const data = await res.json()
-                setUser(data)//zapisuje dane usera
-            } else {
-                logout()//jesli token stracil waznosc logout
-            }
-        } catch (e) {
-            console.error(e)
-            logout()
-        }
-    }
-
-    // Funkcja pobierania historii
-    const fetchHistory = async () => {
-        try {
-            const res = await fetch(`${API_URL}/transcripts`, {
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-            if (res.ok) {
-                const data = await res.json()
-                const sorted = Array.isArray(data) ? data.reverse() : [] 
-                setHistory(sorted)
-            }
-        } catch (e) {
-            console.error("Błąd pobierania historii:", e)
-        }
-    }
-
-    // Funkcja usuwania
-    const handleDelete = async (id, e) => {
-        e.stopPropagation() 
-
-        try {
-            const res = await fetch(`${API_URL}/transcripts/${id}`, {
-                method: "DELETE",
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-            if (res.ok) {
-                showNotification("Usunięto pomyślnie", "success")
-                fetchHistory() 
-                if (transcriptResult?.id === id) {
-                    setTranscriptResult(null) 
-                }
-            } else {
-                showNotification("Nie udało się usunąć", "error")
-            }
-        } catch (e) {
-            console.error(e)
-            showNotification("Błąd połączenia", "error")
-        }
-    }
-
-    //laczenie z kontem google
-    const connectGoogleAccount = async (code) => {
-        //kod autoryzacyjny google wysylany do backendu w celu zamiany na tokeny
-        try {
-            const res = await fetch(`${API_URL}/auth/google/connect`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({code})
-            })
-            if (res.ok) {
-                showNotification("Pomyślnie połączono konto Google.", "success")
-                //czysczenie linku
-                window.history.replaceState({}, document.title, "/")
-                //odswiezanie danych usera
-                fetchUserData()
-            }
-        } catch (e) {
-            console.error(e)
-            showNotification("Błąd podczas łączenia z kontem Google.", "error")
-        }
+    //motyw
+    const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"))
+    
+    //wyświetlanie powiadomień zamiast alertów
+    const showNotification = (message, type = 'error') => {
+        setNotification({ message, type })
+        setTimeout(() => setNotification(null), 5000)
     }
 
     //obsluga wylogowania
@@ -163,14 +73,37 @@ function App() {
         setNotification(null) 
     }
 
-    //obsluga logowania i rejestracji
+    
+    //pobieranie danych usera
+    const fetchUserData = async () => {
+        //pobiera dane profilu z backendu
+        try {
+            const res = await fetch(`${API_URL}/users/me`, { headers: {"Authorization": `Bearer ${token}`} })
+            if (res.ok) setUser(await res.json()) //zapisuje dane usera
+            else logout() //jesli token stracil waznosc logout
+        } catch (e) { console.error(e); logout(); }
+    }
+
+    // Funkcja pobierania historii
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch(`${API_URL}/transcripts`, { headers: {"Authorization": `Bearer ${token}`} })
+            if (res.ok) {
+                const data = await res.json()
+                const sorted = Array.isArray(data) ? data.reverse() : [] 
+                setHistory(sorted)
+            }
+        } catch (e) { console.error("History error:", e) }
+    }
+
+    // Obsluga logowania i rejestracji
     const handleAuth = async (e) => {
         //obsluga formularza logowania lub rejestracji
         e.preventDefault()
         setNotification(null) 
         const endpoint = authMode === "login" ? "/token" : "/register"
-
         let body, headers = {}
+
         //konfiguracja w zaleznosci czy lgoowanie czy rejestracja
         if (authMode === "login") {
             //formData dla OAuth2
@@ -184,21 +117,16 @@ function App() {
             headers = {"Content-Type": "application/json"}
             body = JSON.stringify({email, password})
         }
+
         //wysylanie zadania i zapisanie tokenow
         try {
-            const res = await fetch(`${API_URL}${endpoint}`, {
-                method: "POST",
-                headers: headers,
-                body: body
-            })
+            const res = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers, body })
             const data = await res.json()
             if (res.ok) {
                 localStorage.setItem("token", data.access_token)
                 setToken(data.access_token)
                 //po rejestracji automatycznie nastepuje logowanie
-                if (authMode === "register") {
-                    showNotification("Konto utworzone pomyślnie.", "success")
-                }
+                if (authMode === "register") showNotification("Konto utworzone pomyślnie.", "success")
             } else {
                 showNotification(`Błąd: ${data.detail}`, "error")
             }
@@ -208,46 +136,55 @@ function App() {
         }
     }
 
+    // Laczenie z kontem google
+    const connectGoogleAccount = async (code) => {
+        //kod autoryzacyjny google wysylany do backendu w celu zamiany na tokeny
+        try {
+            const res = await fetch(`${API_URL}/auth/google/connect`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({code})
+            })
+            if (res.ok) {
+                showNotification("Pomyślnie połączono konto Google.", "success")
+                //czysczenie linku
+                window.history.replaceState({}, document.title, "/")
+                //odswiezanie danych usera
+                fetchUserData()
+            }
+        } catch (e) {
+            console.error(e)
+            showNotification("Błąd Google Connect", "error")
+        }
+    }
+
     const handleGoogleLinkClick = async () => {
         //pobiera z backendu url do zalogowania uzytkownika w google
         try {
-            const res = await fetch(`${API_URL}/auth/google/url`, {
-                headers: {"Authorization": `Bearer ${token}`}
-            })
+            const res = await fetch(`${API_URL}/auth/google/url`, { headers: {"Authorization": `Bearer ${token}`} })
             const data = await res.json()
             //przekierowanie do google
             window.location.href = data.url
         } catch (e) {
             console.error(e)
-            showNotification("Nie udało się przełączyć na stronę logowania Google", "error")
+            showNotification("Błąd URL Google", "error")
         }
     }
 
-    // Obsługa konkretnego eventu
-    const addToCalendar = async (eventData) => {
-        //wysyla zadanie utworzenia wydarzenia w kalendarzu
-        const targetEvent = eventData || transcriptResult.calendar_events;
-
-        if (!transcriptResult || !transcriptResult.id || !targetEvent) {
-            return;
-        }
+    // Funkcja usuwania
+    const handleDelete = async (id, e) => {
+        e.stopPropagation() 
         try {
-            const res = await fetch(`${API_URL}/transcripts/${transcriptResult.id}/create_event`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json", 
-                    "Authorization": `Bearer ${token}`
-                },
-                // Wysyłamy konkretny obiekt w body
-                body: JSON.stringify(targetEvent)
+            const res = await fetch(`${API_URL}/transcripts/${id}`, {
+                method: "DELETE",
+                headers: {"Authorization": `Bearer ${token}`}
             })
-            const data = await res.json()
             if (res.ok) {
-                showNotification("Dodano wydarzenie do kalendarza", "success")
-                // jesli da sie dodac wydarzenie to otwieramy kalendarz w nowej karcie
-                if(data.link) window.open(data.link, '_blank')
+                showNotification("Usunięto pomyślnie", "success")
+                fetchHistory() 
+                if (transcriptResult?.id === id) setTranscriptResult(null) 
             } else {
-                showNotification(`Błąd: ${data.detail || "Nie udało się dodać wydarzenia"}`, "error")
+                showNotification("Nie udało się usunąć", "error")
             }
         } catch (e) {
             console.error(e)
@@ -255,10 +192,29 @@ function App() {
         }
     }
 
-    // Zapisuje wybrany plik do stanu
-    const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0])
-        setAppStatus("")
+    // Obsługa konkretnego eventu
+    const addToCalendar = async (index) => {
+        //wysyla zadanie utworzenia wydarzenia w kalendarzu
+        if (!transcriptResult || !transcriptResult.id) return;
+        try {
+            const res = await fetch(`${API_URL}/transcripts/${transcriptResult.id}/create_event?event_index=${index}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                // Wysyłamy konkretny obiekt w body
+                body: JSON.stringify({})
+            })
+            const data = await res.json()
+            if (res.ok) {
+                showNotification("Dodano wydarzenie do kalendarza", "success")
+                // jesli da sie dodac wydarzenie to otwieramy kalendarz w nowej karcie
+                if(data.link) window.open(data.link, '_blank')
+            } else {
+                showNotification(`Błąd: ${data.detail || "Nie udało się dodać"}`, "error")
+            }
+        } catch (e) {
+            console.error(e)
+            showNotification("Błąd połączenia", "error")
+        }
     }
 
     // Wykonuje upload pliku
@@ -267,7 +223,6 @@ function App() {
             setAppStatus("Wybierz plik!")
             return
         }
-
         setAppStatus("Wysyłanie...")
         setNotification(null) // czyszczenie błędów
 
@@ -281,10 +236,9 @@ function App() {
                 headers: {"Authorization": `Bearer ${token}`},
                 body: formData,
             })
-
             if (response.ok) {
                 const data = await response.json()
-                setTranscriptResult(data)//zapis odpowiedzi z backendu
+                setTranscriptResult(data) //zapis odpowiedzi z backendu
                 setAppStatus("Plik przetworzony pomyślnie!")
                 setSelectedFile(null)
                 // Czyszczenie inputu
@@ -292,276 +246,69 @@ function App() {
                 fetchHistory() // Odśwież historię po uploadzie
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                setAppStatus(`Błąd serwera (${response.status}): ${errorData.detail || response.statusText}`);
+                setAppStatus(`Błąd serwera: ${errorData.detail || response.statusText}`);
             }
         } catch (error) {
-            console.error("Błąd połączenia:", error)
+            console.error(error)
             setAppStatus(`Błąd połączenia z backendem`)
         }
     }
 
-    const formatEventDate = (event) => {
-        if (!event) {
-            return;
-        }
-        //pobieranie stringu z data
-        const dateString = event.start_date || event.start_time;
-        if (!dateString) {
-            return "Brak daty";
-        }
-        const dateObj = new Date(dateString)
-        //sprawdzenie czy wydarzenie calodniowe (sprawdzenie stringa w razie gdyby ai go zwrocilo zamiast boola)
-        const isAllDay = event.is_all_day === true || event.is_all_day === "true"
-        if (isAllDay) {
-            return dateObj.toLocaleString('pl-PL', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        } else {
-            return dateObj.toLocaleString('pl-PL', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-    }
-
-    //logowanie/rejestracja
+    //logowanie
     if (!token) {
         return (
-            <div className="app-root-container" style={{justifyContent: 'center', minHeight: '80vh'}}>
-                <div style={{position: 'absolute', top: '20px', right: '20px'}}>
-                    <button onClick={toggleTheme} style={{background: 'transparent', border: '1px solid var(--border-color)',
-                        color: 'var(--text-main)', boxShadow: 'none'}}>
-                        {theme === 'light' ? '🌙' : '☀️'}
-                    </button>
-                </div>
-
-                <h1>AI Transcriber</h1>
-                <div className="card" style={{maxWidth: '400px', margin: '0 auto', width: '100%'}}>
-                    <h2>{authMode === "login" ? "Witaj ponownie" : "Utwórz konto"}</h2>
-                    <p className="subtitle" style={{marginBottom: '20px'}}>
-                        {authMode === "login" ? "Zaloguj się, aby kontynuować" : "Zarejestruj się, aby korzystać z aplikacji"}
-                    </p>
-                    
-                    <NotificationBanner />
-
-                    <form onSubmit={handleAuth} style={{display: 'flex', flexDirection: 'column', width: '100%'}}>
-                        <input type="email" placeholder="Adres e-mail" value={email}
-                               onChange={(e) => setEmail(e.target.value)} required/>
-                        <input type="password" placeholder="Hasło" value={password}
-                               onChange={(e) => setPassword(e.target.value)} required/>
-                        <button type="submit" style={{marginTop: '10px'}}>
-                            {authMode === "login" ? "Zaloguj się" : "Zarejestruj się"}
-                        </button>
-                    </form>
-                    <p style={{marginTop: '20px', fontSize: '0.9rem', color: 'var(--text-muted)'}}>
-                        {authMode === "login" ? "Nie masz konta?" : "Masz już konto?"}
-                        <span onClick={() => {
-                            setAuthMode(authMode === "login" ? "register" : "login")
-                            setNotification(null)
-                        }}>
-                            {authMode === "login" ? "Zarejestruj się" : "Zaloguj się"}
-                        </span>
-                    </p>
-                </div>
-            </div>
+            <AuthForm 
+                authMode={authMode} setAuthMode={setAuthMode}
+                email={email} setEmail={setEmail}
+                password={password} setPassword={setPassword}
+                handleAuth={handleAuth}
+                notification={notification}
+                theme={theme} toggleTheme={toggleTheme}
+            />
         )
     }
 
     //glowna apka po logowaniu
     return (
         <div className="app-root-container">
-            <header>
-                <h1>AI Transcriber</h1>
-                <div>
-                    <div>{user?.email}</div>
-                    {/*przycisk zmiany motywu*/}
-                    <button onClick={toggleTheme} 
-                        style={{backgroundColor: 'var(--card-bg)', color: 'var(--text-main)',
-                        border: '1px solid var(--border-color)', padding: '8px 12px'}}
-                        title="Zmień motyw">
-                        {theme === 'light' ? '🌙' : '☀️'}
-                    </button>
-
-                    <button onClick={logout} style={{backgroundColor: 'var(--card-bg)', color: 'var(--text-main', border: '1px solid var(--border-color)', padding: '8px 16px'}}>
-                        Wyloguj
-                    </button>
-                </div>
-            </header>
+            <Header 
+                user={user} 
+                theme={theme} 
+                toggleTheme={toggleTheme} 
+                logout={logout} 
+            />
             
-            <NotificationBanner />
+            <NotificationBanner notification={notification} />
 
-            {/*Status Google*/}
-            {user && !user.is_google_connected && (
-                <div className="card" style={{borderLeft: '4px solid #f59e0b'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '10px'}}>
-                        <div>
-                            <h3 style={{border: 'none', padding: 0, margin: 0}}>Integracja z Google</h3>
-                            <p style={{margin: '5px 0 0 0', color: 'var(--text-muted'}}>Połącz konto, aby automatycznie dodawać wydarzenia do kalendarza.</p>
-                        </div>
-                        <button onClick={handleGoogleLinkClick}>Połącz z Google</button>
-                    </div>
-                </div>
-            )}
+            {/* Status Google */}
+            <GoogleConnect 
+                user={user} 
+                handleGoogleLinkClick={handleGoogleLinkClick} 
+            />
 
-            {/*Upload*/}
-            <div className="card">
-                <h3>Nowa transkrypcja</h3>
-                <p className="subtitle" style={{textAlign: 'left', width: '100%'}}>
-                    Wgraj plik tekstowy (.txt), aby AI wygenerowało podsumowanie i wykryło wydarzenia.
-                </p>
-                <input
-                    type="file"
-                    accept=".txt"
-                    onChange={handleFileChange}
-                />
-                
-                <div style={{display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: '10px', alignItems: 'center', gap: '15px'}}>
-                    <span className="status">{appStatus}</span>
-                    <button onClick={handleUpload} disabled={!selectedFile}>
-                        Generuj podsumowanie
-                    </button>
-                </div>
-            </div>
+            {/* Upload */}
+            <FileUpload 
+                handleFileChange={(e) => { setSelectedFile(e.target.files[0]); setAppStatus(""); }}
+                handleUpload={handleUpload}
+                selectedFile={selectedFile}
+                appStatus={appStatus}
+            />
 
-            {/*wynik transkrypcji*/}
-            {transcriptResult && (
-                <div style={{display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.5s'}}>
-                    
-                    {/*sekcja spotkań*/}
-                    {transcriptResult.calendar_events && (
-                        <div className="meetings-section">
-                            <h3 style={{marginBottom: '15px', color: 'var(--text-main)', textAlign: 'left'}}>
-                                Znalezione spotkania
-                            </h3>
-                            
-                            {/*nagłówek tabeli*/}
-                            <div className="meetings-header">
-                                <div style={{flex: 1}}>DATA</div>
-                                <div style={{flex: 1, paddingLeft: '15px'}}>TEMAT</div>
-                                <div style={{flex: 1, textAlign: 'right'}}>DODAJ DO KALENDZRZA</div>
-                            </div>
-
-                            {/*lista spotkań*/}
-                            <div className="meetings-list">
-                                {/*mapowanie niezależnie czy to tablica czy pojedynczy obiekt*/}
-                                {(Array.isArray(transcriptResult.calendar_events) 
-                                    ? transcriptResult.calendar_events 
-                                    : [transcriptResult.calendar_events]
-                                ).map((evt, index) => (
-                                    <div className="meeting-row" key={index}>
-                                        {/*data*/}
-                                        <div className="col-date">
-                                            {formatEventDate(evt)}
-                                        </div>
-
-                                        {/*temat*/}
-                                        <div className="col-topic">
-                                            {evt.summary || "Brak tematu"}
-                                        </div>
-
-                                        {/*przycisk*/}
-                                        <div className="col-action">
-                                            {user?.is_google_connected ? (
-                                                <button 
-                                                    onClick={() => addToCalendar(evt)} 
-                                                    className="btn-accept"
-                                                >
-                                                    Dodaj do kalendarza
-                                                </button>
-                                            ) : (
-                                                <button 
-                                                    onClick={handleGoogleLinkClick}
-                                                    style={{backgroundColor: '#f59e0b', color: 'white', fontSize: '0.85rem', padding: '8px 12px'}}
-                                                >
-                                                    Połącz z Google
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Podsumowanie */}
-                    <div className="card">
-                        <h3>Podsumowanie: {transcriptResult.filename}</h3>
-                        <div className="summary-box">
-                            {transcriptResult.summary || "Nie wygenerowano podsumowania"}
-                        </div>
-                        <button 
-                            className="btn-small btn-view" 
-                            style={{marginTop: '15px', alignSelf: 'flex-start'}}
-                            onClick={() => setTranscriptResult(null)}
-                        >
-                            Zamknij podgląd
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Wynik transkrypcji */}
+            <TranscriptResult 
+                transcriptResult={transcriptResult}
+                user={user}
+                handleGoogleLinkClick={handleGoogleLinkClick}
+                addToCalendar={addToCalendar}
+                closePreview={() => setTranscriptResult(null)}
+            />
 
             {/* Historia Transkrypcji */}
-            <div className="card">
-                <h3>Historia transkrypcji</h3>
-                {history.length === 0 ? (
-                    <p className="subtitle">Brak historii transkrypcji.</p>
-                ) : (
-                    <div className="table-container">
-                        <table className="history-table">
-                            <thead>
-                                <tr>
-                                    <th>Plik</th>
-                                    <th>Wykryte wydarzenie</th>
-                                    <th style={{textAlign: 'right'}}>Akcje</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {history.map((item) => (
-                                    <tr key={item.id}>
-                                        <td>{item.filename || `Transkrypcja #${item.id}`}</td>
-                                        <td>
-                                            {item.calendar_events ? (
-                                                <span style={{color: 'var(--success-text', fontWeight: '500'}}>
-                                                    {Array.isArray(item.calendar_events) 
-                                                        ? `Znaleziono: ${item.calendar_events.length}` 
-                                                        : item.calendar_events.summary}
-                                                </span>
-                                            ) : (
-                                                <span style={{color: 'var(--text-muted'}}>Brak wydarzeń</span>
-                                            )}
-                                        </td>
-                                        <td style={{textAlign: 'right'}}>
-                                            <div className="action-buttons" style={{justifyContent: 'flex-end'}}>
-                                                <button 
-                                                    className="btn-small btn-view" 
-                                                    onClick={() => {
-                                                        setTranscriptResult(item)
-                                                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                                                    }}
-                                                >
-                                                    Pokaż
-                                                </button>
-                                                <button 
-                                                    className="btn-small btn-delete" 
-                                                    onClick={(e) => handleDelete(item.id, e)}
-                                                >
-                                                    Usuń
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+            <HistoryList 
+                history={history}
+                setTranscriptResult={setTranscriptResult}
+                handleDelete={handleDelete}
+            />
         </div>
     )
 }
