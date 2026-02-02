@@ -5,6 +5,9 @@ const API_URL = "http://localhost:8000"
 
 // Główny komponent
 function App() {
+    //Motyw
+    const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
+
     //Autoryzacja
     const [token, setToken] = useState(localStorage.getItem("token")) //token z pamieci przegladarki
     const [user, setUser] = useState(null) //dane zalogowanego uzytkownika
@@ -19,6 +22,16 @@ function App() {
     // Historia i Powiadomienia
     const [history, setHistory] = useState([]) //historia
     const [notification, setNotification] = useState(null) //komunikaty
+
+    //zarządzanie motywem
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme)
+        localStorage.setItem("theme", theme)
+    }, [theme])
+
+    const toggleTheme = () => {
+        setTheme((prev) => (prev === "light" ? "dark" : "light"))
+    }
 
     //wyświetlanie powiadomień zamiast alertów
     const showNotification = (message, type = 'error') => {
@@ -36,7 +49,7 @@ function App() {
             padding: '15px', marginBottom: '20px', borderRadius: '8px', textAlign: 'center', fontWeight: '600',
             backgroundColor: isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
             color: isSuccess ? 'var(--success-text)' : 'var(--error-text)',
-            border: `1px solid ${isSuccess ? '#a7f3d0' : '#fecaca'}`, animation: 'fadeIn 0.3s ease'
+            border: `1px solid ${isSuccess ? 'var(--sucess-border)' : 'var(--error-border'}`, animation: 'fadeIn 0.3s ease'
         };
         return <div style={style}>{notification.message}</div>
     }
@@ -322,6 +335,13 @@ function App() {
     if (!token) {
         return (
             <div className="app-root-container" style={{justifyContent: 'center', minHeight: '80vh'}}>
+                <div style={{position: 'absolute', top: '20px', right: '20px'}}>
+                    <button onClick={toggleTheme} style={{background: 'transparent', border: '1px solid var(--border-color)',
+                        color: 'var(--text-main)', boxShadow: 'none'}}>
+                        {theme === 'light' ? '🌙' : '☀️'}
+                    </button>
+                </div>
+
                 <h1>AI Transcriber</h1>
                 <div className="card" style={{maxWidth: '400px', margin: '0 auto', width: '100%'}}>
                     <h2>{authMode === "login" ? "Witaj ponownie" : "Utwórz konto"}</h2>
@@ -340,7 +360,7 @@ function App() {
                             {authMode === "login" ? "Zaloguj się" : "Zarejestruj się"}
                         </button>
                     </form>
-                    <p style={{marginTop: '20px', fontSize: '0.9rem'}}>
+                    <p style={{marginTop: '20px', fontSize: '0.9rem', color: 'var(--text-muted)'}}>
                         {authMode === "login" ? "Nie masz konta?" : "Masz już konto?"}
                         <span onClick={() => {
                             setAuthMode(authMode === "login" ? "register" : "login")
@@ -361,7 +381,15 @@ function App() {
                 <h1>AI Transcriber</h1>
                 <div>
                     <div>{user?.email}</div>
-                    <button onClick={logout} style={{backgroundColor: 'white', color: '#374151', border: '1px solid #d1d5db', padding: '8px 16px'}}>
+                    {/*przycisk zmiany motywu*/}
+                    <button onClick={toggleTheme} 
+                        style={{backgroundColor: 'var(--card-bg)', color: 'var(--text-main)',
+                        border: '1px solid var(--border-color)', padding: '8px 12px'}}
+                        title="Zmień motyw">
+                        {theme === 'light' ? '🌙' : '☀️'}
+                    </button>
+
+                    <button onClick={logout} style={{backgroundColor: 'var(--card-bg)', color: 'var(--text-main', border: '1px solid var(--border-color)', padding: '8px 16px'}}>
                         Wyloguj
                     </button>
                 </div>
@@ -375,7 +403,7 @@ function App() {
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '10px'}}>
                         <div>
                             <h3 style={{border: 'none', padding: 0, margin: 0}}>Integracja z Google</h3>
-                            <p style={{margin: '5px 0 0 0', color: '#6b7280'}}>Połącz konto, aby automatycznie dodawać wydarzenia do kalendarza.</p>
+                            <p style={{margin: '5px 0 0 0', color: 'var(--text-muted'}}>Połącz konto, aby automatycznie dodawać wydarzenia do kalendarza.</p>
                         </div>
                         <button onClick={handleGoogleLinkClick}>Połącz z Google</button>
                     </div>
@@ -409,7 +437,7 @@ function App() {
                     {/*sekcja spotkań*/}
                     {transcriptResult.calendar_events && (
                         <div className="meetings-section">
-                            <h3 style={{marginBottom: '15px', color: '#374151', textAlign: 'left'}}>
+                            <h3 style={{marginBottom: '15px', color: 'var(--text-main)', textAlign: 'left'}}>
                                 Znalezione spotkania
                             </h3>
                             
@@ -500,13 +528,13 @@ function App() {
                                         <td>{item.filename || `Transkrypcja #${item.id}`}</td>
                                         <td>
                                             {item.calendar_events ? (
-                                                <span style={{color: '#059669', fontWeight: '500'}}>
+                                                <span style={{color: 'var(--success-text', fontWeight: '500'}}>
                                                     {Array.isArray(item.calendar_events) 
                                                         ? `Znaleziono: ${item.calendar_events.length}` 
                                                         : item.calendar_events.summary}
                                                 </span>
                                             ) : (
-                                                <span style={{color: '#9ca3af'}}>Brak wydarzeń</span>
+                                                <span style={{color: 'var(--text-muted'}}>Brak wydarzeń</span>
                                             )}
                                         </td>
                                         <td style={{textAlign: 'right'}}>

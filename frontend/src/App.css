@@ -24,6 +24,7 @@ header {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   flex-wrap: wrap;
   gap: 15px;
+  transition: background-color 0.3s ease;
 }
 
 header h1 {
@@ -50,7 +51,7 @@ header div {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .card:hover {
@@ -96,9 +97,9 @@ input:focus {
 
 input[type="file"] {
   border: 2px dashed var(--border-color);
-  background-color: #f9fafb;
+  background-color: var(--lighter-bg);
   padding: 40px 20px;
-  width: 100%;
+  width: 100% center;
   border-radius: 12px;
   cursor: pointer;
   text-align: center;
@@ -108,7 +109,7 @@ input[type="file"] {
 
 input[type="file"]:hover {
   border-color: var(--primary-color);
-  background-color: #eff6ff;
+  background-color: var(--highlight-bg);
 }
 
 
@@ -194,7 +195,7 @@ p span:hover {
 }
 
 .history-table th {
-  background-color: #f9fafb;
+  background-color: var(--secondary-bg);
   color: var(--text-muted);
   font-weight: 600;
   padding: 12px 16px;
@@ -216,7 +217,7 @@ p span:hover {
 }
 
 .history-table tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--hover-bg);
 }
 
 
@@ -233,26 +234,26 @@ p span:hover {
 }
 
 .btn-view {
-  background-color: #fff;
+  background-color: var(--card-bg);
   color: var(--primary-color);
   border: 1px solid var(--border-color);
 }
 
 .btn-view:hover {
-  background-color: #eff6ff;
+  background-color: var(--highlight-bg);
   border-color: var(--primary-color);
   transform: translateY(0);
 }
 
 .btn-delete {
-  background-color: #fff;
+  background-color: var(--card-bg);
   color: var(--error-text);
   border: 1px solid var(--border-color);
 }
 
 .btn-delete:hover {
   background-color: var(--error-bg);
-  border-color: #fecaca;
+  border-color: var(--error-border);
   transform: translateY(0);
 }
 
@@ -264,7 +265,7 @@ p span:hover {
 
 .meetings-header {
   display: flex;
-  background-color: #f3f4f6;
+  background-color: var(--secondary-bg);
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
   border: 1px solid var(--border-color);
@@ -283,7 +284,7 @@ p span:hover {
 .meetings-list {
   display: flex;
   flex-direction: column;
-  background-color: white;
+  background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
@@ -304,7 +305,7 @@ p span:hover {
 }
 
 .meeting-row:hover {
-  background-color: #f9fafb;
+  background-color: var(--hover-bg);
 }
 
 /* Kolumny - podział ok. 33% */

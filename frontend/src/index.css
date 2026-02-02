@@ -6,17 +6,61 @@
   font-weight: 400;
   
   /* użyta paleta kolorów */
+  /*tryb jasny*/
   --primary-color: #4f46e5;
   --primary-hover: #4338ca;
+
   --bg-color: #f3f4f6;
   --card-bg: #ffffff;
   --text-main: #111827;
   --text-muted: #6b7280;
   --border-color: #e5e7eb;
+
+  /*interfejs*/
+  --input-bg: #f9fafb;
+  --input-focus-bg: #ffffff;
+  --button-text: #ffffff;
+  --secondary-bg: #f8fafc; /*tło podsumowań i nagłówków tabel*/
+  --hover-bg: #f9fafb; /*wiersze tabel*/
+  --highligh-bg: #eff6ff; /*input file*/
+   --lighter-bg: #eaebee;
+
+  /*statusy*/
   --success-bg: #d1fae5;
   --success-text: #065f46;
+  --success-border: #a7f3d0;
   --error-bg: #fee2e2;
   --error-text: #991b1b;
+  --error-border: #fecaca;
+}
+
+/*tryb ciemny*/
+[data-theme="dark"] {
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+
+  --bg-color: #111827;
+  --card-bg: #1f2937;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-color: #374151;
+
+    /*interfejs*/
+  --input-bg: #111827;
+  --input-focus-bg: #030712;
+  --button-text: #ffffff;
+  --secondary-bg: #1e293b; /*tło podsumowań i nagłówków tabel*/
+  --hover-bg: #374151; /*wiersze tabel*/
+  --highligh-bg: #1e1b4b; /*input file*/
+  --lighter-bg: #404559;
+
+    /*statusy*/
+  --success-bg: #064e3b;
+  --success-text: #a7f3d0;
+  --success-border: #065f46;
+  --error-bg: #7f1d1d;
+  --error-text: #fecaca;
+  --error-border: #991b1b;
 }
 
 body {
@@ -29,6 +73,7 @@ body {
   justify-content: center;
   align-items: flex-start;
   padding-top: 40px;
+  transition: background-color 0.3 ease, color 0.3s ease;
 }
 
 h1, h2, h3, h4 {
