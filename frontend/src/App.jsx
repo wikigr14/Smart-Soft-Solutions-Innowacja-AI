@@ -107,7 +107,6 @@ function App() {
     // Funkcja usuwania
     const handleDelete = async (id, e) => {
         e.stopPropagation() 
-        if (!window.confirm("Czy na pewno chcesz usunąć ten zapis?")) return
 
         try {
             const res = await fetch(`${API_URL}/transcripts/${id}`, {

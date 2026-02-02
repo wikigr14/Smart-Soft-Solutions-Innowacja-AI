@@ -356,3 +356,27 @@ def create_event_in_google(
         raise HTTPException(
             status_code=500, detail="Błąd działania Google Calendar API"
         )
+
+@app.delete("/transcripts/{transcript_id}")
+def delete_transcript(
+    transcript_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    # transkrypcja, która ma podane ID i należy do aktualnego użytkownika
+    db_transcript = (
+        db.query(models.Transcript)
+        .filter(
+            models.Transcript.id == transcript_id,
+            models.Transcript.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not db_transcript:
+        raise HTTPException(status_code=404, detail="Transkrypcja nie znaleziona")
+
+    db.delete(db_transcript)
+    db.commit()
+
+    return {"status": "deleted", "id": transcript_id}
