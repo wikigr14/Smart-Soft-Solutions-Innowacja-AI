@@ -90,7 +90,7 @@ function App() {
             const res = await fetch(`${API_URL}/transcripts`, { headers: {"Authorization": `Bearer ${token}`} })
             if (res.ok) {
                 const data = await res.json()
-                const sorted = Array.isArray(data) ? data.reverse() : [] 
+                const sorted = data.sort((a,b) => b.id - a.id)
                 setHistory(sorted)
             }
         } catch (e) { console.error("History error:", e) }
@@ -242,8 +242,8 @@ function App() {
                 setAppStatus("Plik przetworzony pomyślnie!")
                 setSelectedFile(null)
                 // Czyszczenie inputu
-                document.querySelector('input[type="file"]').value = ""
-                fetchHistory() // Odśwież historię po uploadzie
+                
+                await fetchHistory() // Odśwież historię po uploadzie
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 setAppStatus(`Błąd serwera: ${errorData.detail || response.statusText}`);
