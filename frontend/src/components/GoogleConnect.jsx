@@ -1,7 +1,7 @@
 import React from 'react';
 
 const GoogleConnect = ({ user, handleGoogleLinkClick }) => {
-    if (user && user.is_google_connected) return null;
+    if (!user || user.is_google_connected) return null;
 
     return (
         <div className="card card-google">
