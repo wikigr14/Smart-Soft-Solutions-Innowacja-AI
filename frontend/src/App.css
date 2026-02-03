@@ -140,7 +140,8 @@ input[type="password"] {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
-  background-color: var(--inptu-bg);
+  background-color: var(--input-bg);
+  color: var(--text-main);
   transition: all 0.2s;
   outline: none;
   width: 100%;
@@ -150,7 +151,7 @@ input[type="password"] {
 
 input:focus {
   border-color: var(--primary-color);
-  background-color: #eceaea;
+  background-color: var(--input-focus-bg);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
