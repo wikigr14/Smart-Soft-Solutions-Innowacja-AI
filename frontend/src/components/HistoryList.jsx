@@ -13,7 +13,7 @@ const HistoryList = ({ history, setTranscriptResult, handleDelete }) => {
                             <tr>
                                 <th>Plik</th>
                                 <th>Wykryte wydarzenie</th>
-                                <th style={{textAlign: 'right'}}>Akcje</th>
+                                <th>Akcje</th>
                             </tr>
                         </thead>
                         <tbody>

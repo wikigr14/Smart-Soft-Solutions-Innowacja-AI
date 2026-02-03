@@ -247,7 +247,8 @@ p span:hover {
 
 /*wyniki transkrypcji*/
 .summary-box {
-  background-color: #f8fafc !important;
+  background-color: var(--card-bg) !important;
+  color: var(--text-main) !important;
   border: 1px solid var(--border-color);
   padding: 20px !important;
   border-radius: 12px !important;
