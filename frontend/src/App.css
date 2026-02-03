@@ -527,3 +527,193 @@ color: var(--text-muted);
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+
+.upload-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.hidden-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.drop-zone {
+    position: relative;
+    border: 2px dashed var(--border-color);
+    border-radius: 16px;
+    background-color: var(--secondary-bg);
+    padding: 40px 20px;
+    text-align: center;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.drop-zone:hover, .drop-zone.dragging {
+    border-color: var(--primary-color);
+    background-color: var(--highlight-bg); /* lub var(--hover-bg) */
+    transform: translateY(-2px);
+}
+
+.icon-circle {
+    width: 48px;
+    height: 48px;
+    background-color: var(--card-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.drop-text p {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.drop-text span {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/*karta pliku*/
+.file-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    animation: fadeIn 0.3s ease;
+}
+
+.file-icon-wrapper {
+    width: 42px;
+    height: 42px;
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    flex-shrink: 0;
+}
+
+.file-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-main);
+}
+
+.btn-icon-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    padding: 0 5px;
+    line-height: 1;
+}
+
+.btn-icon-remove:hover {
+    color: var(--error-text);
+}
+
+/*pasek postępu*/
+.progress-bg {
+    width: 100%;
+    height: 6px;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.4s ease, background-color 0.3s;
+}
+
+.progress-fill.animating {
+    background: linear-gradient(90deg, var(--primary-color) 0%, #a5b4fc 50%, var(--primary-color) 100%);
+    background-size: 200% 100%;
+    animation: loadingBar 1.5s infinite linear;
+}
+
+@keyframes loadingBar {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+.file-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.status-text {
+    font-weight: 600;
+}
+
+.file-card.success .progress-fill { background-color: #10b981; }
+.file-card.success .file-icon-wrapper { color: #10b981; }
+.file-card.success .status-text { color: #059669; }
+
+.file-card.error .progress-fill { background-color: #ef4444; }
+.file-card.error .file-icon-wrapper { color: #ef4444; }
+.file-card.error .status-text { color: #dc2626; }
+
+.error-msg {
+    color: var(--error-text);
+    font-size: 0.9rem;
+    margin: 5px 0;
+    text-align: center;
+}
+
+/*przycisk pod plikiem */
+.upload-btn-main {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
