@@ -24,6 +24,21 @@ const TranscriptResult = ({
         }
     }
 
+    // logika sortowania po datach tabeli znalezionych spotkan
+    const eventsArray = Array.isArray(transcriptResult.calendar_events) 
+        ? transcriptResult.calendar_events 
+        : [transcriptResult.calendar_events];
+
+    // 2. Mapujemy wydarzenia dodając im ich oryginalny indeks z backendu
+    // 3. Sortujemy po dacie
+    const sortedEvents = eventsArray
+        .map((evt, idx) => ({ ...evt, originalIndex: idx })) // Zachowujemy indeks dla API
+        .sort((a, b) => {
+            const dateA = new Date(a.start_date || a.start_time || 0);
+            const dateB = new Date(b.start_date || b.start_time || 0);
+            return dateA - dateB; // Sortowanie rosnące (chronologiczne)
+        });
+
     return (
         <div style={{display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.5s'}}>
             {/* Sekcja spotkań */}
@@ -40,17 +55,14 @@ const TranscriptResult = ({
                     </div>
 
                     <div className="meetings-list">
-                        {(Array.isArray(transcriptResult.calendar_events) 
-                            ? transcriptResult.calendar_events 
-                            : [transcriptResult.calendar_events]
-                        ).map((evt, index) => (
-                            <div className="meeting-row" key={index}>
+                        {sortedEvents.map((evt) => (
+                            <div className="meeting-row" key={evt.originalIndex}>
                                 <div className="col-date">{formatEventDate(evt)}</div>
                                 <div className="col-topic">{evt.summary || "Brak tematu"}</div>
                                 <div className="col-action">
                                     {user?.is_google_connected ? (
                                         <button 
-                                            onClick={() => addToCalendar(index)} 
+                                            onClick={() => addToCalendar(evt.originalIndex)} 
                                             className="btn-accept"
                                         >
                                             Dodaj do kalendarza
