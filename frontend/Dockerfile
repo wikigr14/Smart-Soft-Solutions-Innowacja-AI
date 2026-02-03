@@ -9,8 +9,8 @@ WORKDIR /app
 # Kopiujemy pliki konfiguracyjne (żeby Docker wiedział co instalować)
 COPY package.json package-lock.json* ./
 
-# Instalujemy biblioteki wewnątrz kontenera
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
 
 # Kopiujemy resztę kodu
 COPY . .
