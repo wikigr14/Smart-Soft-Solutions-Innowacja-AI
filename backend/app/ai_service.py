@@ -40,13 +40,50 @@ def get_embedding(text):
         return []
 
 
+def generate_answer_from_context(question: str, context_chunks: list) -> str:
+    if not context_chunks:
+        return "Nie znaleziono informacji na ten temat w twojej historii."
+
+    context_chunks_merged = "\n".join(context_chunks)
+
+    prompt = (
+        "Jesteś asystentem, który odpowiada na pytania WYŁĄCZNIE na podstawie dostarczonego kontekstu.\n"
+        "Kontekst to fragmenty transkrypcji spotkań użytkownika.\n"
+        "Trzymaj się kurczowo tych zasad:\n"
+        "1. Odpowiadaj krótko i konkretnie.\n"
+        "2. Jeśli odpowiedź nie znajduje się w kontekście, napisz: 'Nie znaleziono informacji na ten temat w twojej historii.'\n"
+        "3. Nie zmyślaj, trzymaj się twardych faktów z plików.\n"
+        "4. Używaj języka polskiego."
+    )
+
+    user_prompt = f"Pytanie: {question}\nKontekst: {context_chunks_merged}"
+
+    try:
+        response = client.chat.completions.create(
+            # model="meta-llama/llama-3.3-70b-instruct:free",
+            # model="openai/gpt-oss-120b:free",
+            # model="meta-llama/llama-3.2-3b-instruct:free",
+            model="stepfun/step-3.5-flash:free",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Błąd generowania odpowiedzi RAG: {e}")
+        return "Wystąpił błąd podczas generowania odpowiedzi."
+
+
 def generate_summary(text: str) -> str:
     # funkcja ma za zadanie wyslac tekst do openroutera zeby ten wygenerowal podsumowanie
     try:
         prompt = f"Jesteś asystentem AI. Przeanalizuj poniższą transkrypcję spotkania. Stwórz zwięzłe podsumowanie tego spotkania. Jeśli to możliwe możesz rozbić to podsumowanie na punkty. Jeśli w poniższym tekście jest poruszony temat i data jakiegoś spotkania to wypisz je jeszcze raz na samym końcu w formacie:\nSpotkanie: DATA - Temat spotkania (lub jeśli jego temat nie został podany to poprostu Spotkanie).\nTreść transkrypcji:\n{text}"
         # zapytanie wysylane do openroutera
         response = client.chat.completions.create(
-            model="meta-llama/llama-3.3-70b-instruct:free",
+            # model="meta-llama/llama-3.3-70b-instruct:free",
+            # model="openai/gpt-oss-120b:free",
+            model="stepfun/step-3.5-flash:free",
             # zeby zmienic skopiowac link do innego modelu z https://openrouter.ai/models !!!WYBRAC DARMOWY MODEL!!!
             messages=[
                 {"role": "system", "content": "Jesteś asystentem biurowym AI."},
@@ -113,7 +150,9 @@ def extract_event_json(text: str):
         )
         # zapytanie wysylane do modelu
         response = client.chat.completions.create(
-            model="meta-llama/llama-3.3-70b-instruct:free",
+            # model="meta-llama/llama-3.3-70b-instruct:free",
+            # model="openai/gpt-oss-120b:free",
+            model="stepfun/step-3.5-flash:free",
             # zeby zmienic skopiowac link do innego modelu z https://openrouter.ai/models !!!WYBRAC DARMOWY MODEL!!!
             messages=[
                 {

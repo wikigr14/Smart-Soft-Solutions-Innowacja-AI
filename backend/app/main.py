@@ -37,8 +37,8 @@ class TranscriptResponse(TranscriptCreate):
 
     class Config:
         from_attributes = True
-    
-    @field_validator('calendar_events', mode='before')
+
+    @field_validator("calendar_events", mode="before")
     @classmethod
     def parse_calendar_events(cls, v):
         if isinstance(v, dict):
@@ -282,8 +282,11 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
     # Wyciąganie tekstu
     context_texts = [c.chunk_text for c in best_chunks]
 
+    ai_answer = ai_service.generate_answer_from_context(request.question, context_texts)
+
     return ChatResponse(
-        answer=f"Znalazlem {len(context_texts)} pasujace fragmenty.",
+        # answer=f"Znalazlem {len(context_texts)} pasujace fragmenty.",
+        answer=ai_answer,
         context_chunks=context_texts,
     )
 
@@ -364,6 +367,7 @@ def create_event_in_google(
             status_code=500, detail="Błąd działania Google Calendar API"
         )
 
+
 @app.delete("/transcripts/{transcript_id}")
 def delete_transcript(
     transcript_id: int,
@@ -375,7 +379,7 @@ def delete_transcript(
         db.query(models.Transcript)
         .filter(
             models.Transcript.id == transcript_id,
-            models.Transcript.user_id == current_user.id
+            models.Transcript.user_id == current_user.id,
         )
         .first()
     )

@@ -9,6 +9,7 @@ import GoogleConnect from './components/GoogleConnect';
 import FileUpload from './components/FileUpload';
 import TranscriptResult from './components/TranscriptResult';
 import HistoryList from './components/HistoryList';
+import ChatInterface from './components/ChatInterface';
 
 const API_URL = "http://localhost:8000"
 
@@ -298,6 +299,9 @@ function App() {
                 selectedFile={selectedFile}
                 appStatus={appStatus}
             />
+
+            {/* chatowanie */}
+            <ChatInterface token={token} />
 
             {/* Wynik transkrypcji */}
             <TranscriptResult 
