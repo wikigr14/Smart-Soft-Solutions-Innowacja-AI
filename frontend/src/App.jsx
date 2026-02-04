@@ -70,7 +70,12 @@ function App() {
         setUser(null)
         setTranscriptResult(null)
         setHistory([])
-        setNotification(null) 
+        setNotification(null)
+        setEmail("")
+        setPassword("") 
+        setSelectedFile(null)
+        setAppStatus("")
+        setAuthMode("login")
     }
 
     
