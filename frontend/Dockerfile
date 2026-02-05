@@ -15,8 +15,8 @@ RUN --mount=type=cache,target=/root/.npm \
 # Kopiujemy resztę kodu
 COPY . .
 
-# Otwieramy port 5173 (standardowy dla Vite)
-EXPOSE 5173
+# Otwieramy port 5174 (standardowy dla Vite)
+EXPOSE 5174
 
 # Uruchamiamy serwer developerski z flagą --host, żeby był widoczny z Windowsa
 CMD ["npm", "run", "dev", "--", "--host"]
