@@ -156,7 +156,10 @@ function App() {
                 //czysczenie linku
                 window.history.replaceState({}, document.title, "/")
                 //odswiezanie danych usera
-                fetchUserData()
+                await fetchUserData()
+                await fetchHistory()
+            } else {
+                showNotification("Błąd łączenia z Google.", "error")
             }
         } catch (e) {
             console.error(e)
@@ -167,6 +170,8 @@ function App() {
     const handleGoogleLinkClick = async () => {
         //pobiera z backendu url do zalogowania uzytkownika w google
         try {
+            showNotification("Przekierowywanie do Google...", "success") 
+
             const res = await fetch(`${API_URL}/auth/google/url`, { headers: {"Authorization": `Bearer ${token}`} })
             const data = await res.json()
             //przekierowanie do google
@@ -202,6 +207,12 @@ function App() {
     const addToCalendar = async (index) => {
         //wysyla zadanie utworzenia wydarzenia w kalendarzu
         if (!transcriptResult || !transcriptResult.id) return;
+
+        if (!user || !user.is_google_connected) {
+            showNotification("Musisz najpierw połączyć konto z Google! Użyj przycisku na górze.", "error");
+            return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/transcripts/${transcriptResult.id}/create_event?event_index=${index}`, {
                 method: "POST",

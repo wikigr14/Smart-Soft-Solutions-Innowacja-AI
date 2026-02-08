@@ -146,13 +146,14 @@ def extract_event_json(text: str):
             "Jeśli nie ma spotkań, zwróć pustą tablicę [].\n"
             "Jeśli nie podano TYLKO czasu zakończenia/trwania spotkania to załóż, że trwa ono 1 godzinę.\n"
             "Data musi być w formacie ISO 8601.\n"
+            "Używaj języka polskiego."
             f"Tekst do analizy:\n{text}"
         )
         # zapytanie wysylane do modelu
         response = client.chat.completions.create(
             # model="meta-llama/llama-3.3-70b-instruct:free",
-            # model="openai/gpt-oss-120b:free",
-            model="stepfun/step-3.5-flash:free",
+            model="openai/gpt-oss-120b:free",
+            # model="stepfun/step-3.5-flash:free",
             # zeby zmienic skopiowac link do innego modelu z https://openrouter.ai/models !!!WYBRAC DARMOWY MODEL!!!
             messages=[
                 {

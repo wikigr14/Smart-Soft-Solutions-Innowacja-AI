@@ -12,7 +12,7 @@ const TranscriptResult = ({
 
     const formatEventDate = (event) => {
         if (!event) return;
-        const dateString = event.start_date || event.start_time;
+        const dateString = event.start_time || event.start_date;
         if (!dateString) return "Brak daty";
         const dateObj = new Date(dateString)
         const isAllDay = event.is_all_day === true || event.is_all_day === "true"
@@ -29,14 +29,14 @@ const TranscriptResult = ({
         ? transcriptResult.calendar_events 
         : [transcriptResult.calendar_events];
 
-    // 2. Mapujemy wydarzenia dodając im ich oryginalny indeks z backendu
-    // 3. Sortujemy po dacie
+    // mapujemy wydarzenia dodając im ich oryginalny indeks z backendu
+    // sort po dacie
     const sortedEvents = eventsArray
-        .map((evt, idx) => ({ ...evt, originalIndex: idx })) // Zachowujemy indeks dla API
+        .map((evt, idx) => ({ ...evt, originalIndex: idx })) // indeks dla API
         .sort((a, b) => {
             const dateA = new Date(a.start_date || a.start_time || 0);
             const dateB = new Date(b.start_date || b.start_time || 0);
-            return dateA - dateB; // Sortowanie rosnące (chronologiczne)
+            return dateA - dateB;
         });
 
     return (

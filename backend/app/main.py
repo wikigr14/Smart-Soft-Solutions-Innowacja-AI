@@ -252,7 +252,11 @@ async def upload_text_file(
 
 # Logika odczytu (RAG)
 @app.post("/chat/", response_model=ChatResponse)
-def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
+def ask_question(
+    request: ChatRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
     # Wektoryzacja pytania
     query_vector = ai_service.get_embedding(request.question)
 
@@ -260,7 +264,11 @@ def ask_question(request: ChatRequest, db: Session = Depends(database.get_db)):
         raise HTTPException(status_code=500, detail="Błąd wektoryzacji pytania")
 
     # Szukanie pasujacych fragmentow w bazie
-    query = db.query(models.TranscriptChunk)
+    query = (
+        db.query(models.TranscriptChunk)
+        .join(models.Transcript)
+        .filter(models.Transcript.user_id == current_user.id)
+    )
 
     if request.transcript_id:
         query = query.filter(
